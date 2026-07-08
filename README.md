@@ -60,7 +60,7 @@ Two things worth asking Claude for early on: "set up backups" (the server is the
 
 Server about 10 to 15 euro per month, a domain name (optional) about 10 euro per year, and if you turn on written meeting minutes, an Anthropic API key that costs cents per meeting.
 
-**About that key**: Claude itself runs on the Claude subscription you already have, nothing extra to set up. The API key is a separate thing with its own account and its own pay-per-use billing, and it is only needed for one feature: turning meeting recordings into written minutes. Claude offers it during setup and you can skip it. If you want it, this is the whole process:
+**About that key**: Claude itself runs on the Claude subscription you already have, nothing extra to set up. The API key is a separate thing with its own account and its own pay-per-use billing, and it is used for one small step only. Your own server does the heavy work: it turns the meeting audio into a transcript. The key is then used once per meeting to summarize that transcript into tidy minutes following a set template, which costs cents per call. Claude offers it during setup and you can skip it. If you want it, this is the whole process:
 
 1. Go to console.anthropic.com and sign up (you can use the same email as your Claude account; it is still a separate account with separate billing).
 2. In the left menu, open **Billing**: add a card and set a monthly spend limit, for example 5 euro, so it can never surprise you.
