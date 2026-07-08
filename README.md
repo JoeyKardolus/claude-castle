@@ -75,6 +75,8 @@ Scaleway is the European company renting you the server. When Claude reaches tha
 
 From now on, your habit is: open the terminal, paste `cd claude-castle && claude agents --dangerously-skip-permissions`, press Enter, and say what you want in normal sentences. "Add a photo page to my site." "Something is broken." "What is my server costing?" Changes are live about two minutes after Claude finishes.
 
+And do not stop at the small stuff. This Claude does real computer work, so ask for whatever your day actually needs: a booking form for customers, a price calculator, an automation that files your paperwork, a private page that tracks your orders, a tool nobody sells. If a computer can do it, you can ask for it, and it becomes part of your castle.
+
 Knowing these five things makes Claude make sense:
 
 - **It asks before it builds.** For anything beyond a small change, Claude first interviews you. Answer in normal words.
