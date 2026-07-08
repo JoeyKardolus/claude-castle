@@ -6,6 +6,8 @@ You get your own website, your own private cloud storage (Nextcloud, with two-fa
 
 You type the commands below once. After that, Claude Code does everything else, including setting up the server. It will ask you for one Scaleway API key along the way and walk you through the rest.
 
+**What you need**: a Claude subscription (you have one if you use claude.ai as a paying user), a bank card for the server rental, and a free GitHub account. GitHub is where your castle's files and plans live; no account yet is fine, Claude sends you to the signup page during setup, it takes two minutes.
+
 ## 1. Get a terminal
 
 **Windows**: open PowerShell as administrator, run this, then restart your computer and open the new "Ubuntu" app:
@@ -48,11 +50,27 @@ Type:
 set up my castle
 ```
 
-Claude takes over from here. It connects you to GitHub (you type a short code in the browser; a free account is made on the spot if you have none), gives you your own private copy of the castle, asks for a Scaleway API key (it shows you exactly where to click to get one), creates your server, and sets up the website, Nextcloud, and notulen. It only interrupts you when it truly needs you: the key, an optional domain name, and scanning two QR codes for your secure login.
+Claude takes over from here. It connects you to GitHub (you type a short code in the browser; a free account is made on the spot if you have none), gives you your own private copy of the castle, walks you through Scaleway, creates your server, and sets up the website, Nextcloud, and notulen. It only interrupts you when it truly needs you: the Scaleway key, an optional domain name, and scanning two QR codes for your secure login.
 
-## Afterwards
+## The Scaleway part, so you know what is coming
 
-Daily use is one habit: open the terminal, run `cd claude-castle && claude agents --dangerously-skip-permissions`, and say what you want. "Add a photo page to my site", "something is broken", "how much is my server costing?". Claude does it; changes go live in about two minutes.
+Scaleway is the European company you rent the server from. When Claude reaches that step it walks you through exactly this, so nothing here is homework, it is just so you recognize it:
+
+1. Create an account at scaleway.com (email, password, verify).
+2. Add your bank card under Billing; the server is about 10 to 15 euro per month and you can delete it any time.
+3. In the console, open IAM, then API keys, then Generate API key. It shows two values, an access key and a secret key; copy both and paste them to Claude. That key is how Claude manages the server for you.
+
+## Living in the castle
+
+Daily use is one habit: open the terminal, run `cd claude-castle && claude agents --dangerously-skip-permissions`, and say what you want in plain words. "Add a photo page to my site", "something is broken", "how much is my server costing?". Claude does it; changes go live in about two minutes.
+
+How working with Claude goes, so its behavior does not surprise you:
+
+- **It asks before it builds.** For anything beyond a tiny change, Claude first interviews you about what you really want. That is on purpose; answer in normal words.
+- **Plans are written down.** A bigger wish becomes a short written plan saved on your GitHub page (github.com/YOURNAME/claude-castle/issues). You can read every plan and its progress there in the browser; asking Claude "what is the status of my plans?" works too.
+- **It remembers.** Claude keeps notes about your setup and preferences inside the castle, so a new conversation picks up where the last one ended.
+- **It is yours to shape.** The file `.claude/soul.md` sets how Claude talks; tell Claude "answer shorter" or "explain more" and it can update that file for good. New words you two start using land in `CONTEXT.md`, the castle's own dictionary.
+- **When something is wrong, say so plainly.** "Something is broken" makes Claude gather the evidence from the server, explain the cause in plain words, and propose the fix before touching anything.
 
 Two things worth asking Claude for early on: "set up backups" (the server is the only place your cloud files live until you do) and, once a month, "update the server and everything on it".
 
