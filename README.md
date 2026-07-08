@@ -18,7 +18,7 @@ wsl --install
 
 ## 2. Download your castle and the two tools
 
-Paste this in the terminal. On a Mac, the first command may pop up a window offering to install "command line developer tools": click Install, wait, then run it again.
+Paste this in the terminal. The first line downloads the castle into a folder named `claude-castle` in your home folder (where every new terminal starts); the other two install the tools. On a Mac, the first command may pop up a window offering to install "command line developer tools": click Install, wait, then run it again.
 
 ```
 git clone https://github.com/JoeyKardolus/claude-castle.git
@@ -58,4 +58,11 @@ Two things worth asking Claude for early on: "set up backups" (the server is the
 
 ## Costs
 
-Server about 10 to 15 euro per month, a domain name (optional) about 10 euro per year, and if you turn on written meeting minutes, an Anthropic API key that costs cents per meeting (separate from your Claude subscription).
+Server about 10 to 15 euro per month, a domain name (optional) about 10 euro per year, and if you turn on written meeting minutes, an Anthropic API key that costs cents per meeting.
+
+**About that key**: Claude itself runs on the Claude subscription you already have, nothing extra to set up. The API key is a separate thing with its own account and its own pay-per-use billing, and it is only needed for one feature: turning meeting recordings into written minutes. Claude offers it during setup and you can skip it. If you want it, this is the whole process:
+
+1. Go to console.anthropic.com and sign up (you can use the same email as your Claude account; it is still a separate account with separate billing).
+2. In the left menu, open **Billing**: add a card and set a monthly spend limit, for example 5 euro, so it can never surprise you.
+3. In the left menu, open **API Keys**, click **Create Key**, and copy the value that starts with `sk-ant-`.
+4. Paste it to Claude when it asks during setup, or later just tell Claude: "add my Anthropic key".
