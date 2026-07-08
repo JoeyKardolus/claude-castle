@@ -34,10 +34,6 @@ _Avoid_: the drive, the cloud
 Two-factor login (password plus a code from your phone). Required on Nextcloud and GitHub accounts.
 _Avoid_: MFA, two-step verification
 
-**setup.sh**:
-The one script at the repo root that prepares a fresh VM: installs Docker, Caddy, the auto-deploy timer, and starts the compose stack.
-_Avoid_: the installer, provisioning script
-
 ## Apps
 
 **Notulen**:
@@ -82,6 +78,6 @@ _Avoid_: intake, kickoff, discovery
 One GitHub issue with the `PRD` label that holds a unit of work: Goal, What, Status, Tasks, Done when, Owner. Tasks live inside it as a checklist.
 _Avoid_: epic, ticket, story
 
-**Playbook**:
-A reusable prompt stored in `prompts/`; paste it into Claude to run a routine job the same way every time.
-_Avoid_: template, recipe, script (that means shell scripts)
+**Onboard**:
+The skill (`.claude/skills/onboard/`) that builds the castle from a fresh laptop: tools, server, deploy, Nextcloud, notulen, end to end. It runs automatically when `config/castle.env` is missing and resumes a half-finished setup by detecting state.
+_Avoid_: setup script, installer, playbook, the wizard

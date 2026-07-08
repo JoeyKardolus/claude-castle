@@ -27,7 +27,7 @@ Three tools run; outputs land in `tmp/_audit-mechanical/`:
 |---|---|---|
 | `vulture` | `apps/**/*.py` + `lib/**/*.py` | unused functions, classes, vars, imports, attributes |
 | `ts-prune` | any `apps/*` or `lib/*` package with a `package.json` | unused TypeScript exports |
-| `shellcheck -i SC2034` | `infra/**/*.sh` + `setup.sh` | unused bash variables |
+| `shellcheck -i SC2034` | `infra/**/*.sh` | unused bash variables |
 
 **Excluded by default**: `tests/`, generated code (migrations), `.venv/`, `node_modules/`, vendored code.
 

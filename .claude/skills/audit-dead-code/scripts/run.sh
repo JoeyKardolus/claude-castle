@@ -44,7 +44,7 @@ SH_OUT="$OUT_DIR/bash.txt"
 if command -v shellcheck >/dev/null 2>&1; then
     echo "running shellcheck SC2034..."
     {
-        { find "$REPO/infra" -name '*.sh' -type f 2>/dev/null; ls "$REPO/setup.sh" 2>/dev/null; } \
+        find "$REPO/infra" -name '*.sh' -type f 2>/dev/null \
             | xargs -r shellcheck --include=SC2034 --format=tty 2>&1 || true
     } > "$SH_OUT"
     echo "  -> $SH_OUT ($(wc -l < "$SH_OUT") lines)"

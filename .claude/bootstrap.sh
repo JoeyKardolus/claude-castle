@@ -53,5 +53,6 @@ VERIFY
   gh repo view          # GitHub reachable from this repo
   claude                # start Claude Code in the repo root
 
-Full setup guide: guides/ in this repo.
+Full setup: start Claude Code in this folder and ask it to set up the castle
+(the onboard skill takes it from there).
 STEPS

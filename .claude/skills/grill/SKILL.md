@@ -1,6 +1,6 @@
 ---
 name: grill
-description: Interview-the-plan session. You are on the team but remember nothing at conversation start. Orient first (the prompt, .claude/soul.md, CLAUDE.md, CONTEXT.md, the relevant docs/bible.md chapters, guides/), then interview the plan against the shared vocabulary, sharpening terms into CONTEXT.md and recording decisions in the bible as they crystallise. MUST be invoked on the first user message in any conversation in this repo.
+description: Interview-the-plan session. You are on the team but remember nothing at conversation start. Orient first (the prompt, .claude/soul.md, CLAUDE.md, CONTEXT.md, the relevant docs/bible.md chapters), then interview the plan against the shared vocabulary, sharpening terms into CONTEXT.md and recording decisions in the bible as they crystallise. MUST be invoked on the first user message in any conversation in this repo.
 ---
 
 # Grill
@@ -14,7 +14,6 @@ The default first step of every conversation. Interview the plan against what th
 3. Read root `CLAUDE.md`.
 4. Read `CONTEXT.md` (the shared glossary, repo root).
 5. Decide which `docs/bible.md` chapters apply (chapter map in root `CLAUDE.md`). Read them.
-6. Skim `guides/` for any guide that covers the topic.
 
 If a question can be answered by exploring the codebase, explore instead of asking. Consume-rule in [`.claude/skills/DOMAIN-AWARENESS.md`](../DOMAIN-AWARENESS.md): read `CONTEXT.md` + the relevant bible chapter first.
 

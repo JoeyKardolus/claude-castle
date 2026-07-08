@@ -35,7 +35,7 @@ The VM and everything that keeps it serving, in `infra/`:
 - **`infra/auto-deploy/`**: the pull loop. A systemd timer runs a script that fetches `origin/main`, and if there are new commits, pulls and restarts the compose stack. Pushing to `main` IS the deploy; there is no separate release step.
 - **`infra/systemd/`**: unit files for the timer and anything else that must survive a reboot.
 - **`infra/docker/`**: shared container build bits.
-- `setup.sh` at the repo root prepares a fresh VM once: Docker, Caddy, the timer, first start of the stack.
+- The `onboard` skill (`.claude/skills/onboard/`) prepares a fresh VM once, driven by Claude: server creation, Docker, the env file, first start of the stack, the timer.
 
 ## infra/nextcloud
 
@@ -49,7 +49,7 @@ Nextcloud runs as a container in the compose stack (config in `infra/nextcloud/`
 
 How work happens in this repo, every conversation:
 
-1. **grill**: Claude orients (soul, CLAUDE.md, CONTEXT.md, the relevant chapter here, guides/) and interviews the plan until it is sharp. Terms land in `CONTEXT.md`; decisions land here as short dated "Decision:" notes in the relevant chapter.
+1. **grill**: Claude orients (soul, CLAUDE.md, CONTEXT.md, the relevant chapter here) and interviews the plan until it is sharp. Terms land in `CONTEXT.md`; decisions land here as short dated "Decision:" notes in the relevant chapter.
 2. **to-prd**: the aligned plan becomes one GitHub issue with the `PRD` label (Goal, What, Status, Tasks, Done when, Owner).
 3. **to-issues** (only if needed): a task someone can pick up independently gets its own linked sub-issue.
 4. **code**: build it, minimal changes, reuse first.

@@ -11,7 +11,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"WORKFLOW PROTOCOL (CLAUDE.md): before responding to the first user message in this conversation, invoke the grill skill via Skill(grill). No exceptions — debug, support, research, brainstorm all route through grill first.\"}}'",
+            "command": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [ ! -f \"$d/config/castle.env\" ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"SETUP MODE: config/castle.env does not exist, so this castle is not set up yet. On the first user message, invoke the onboard skill via Skill(onboard) and drive the setup autonomously. Skip the grill interview until the castle is running.\"}}'; else echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"WORKFLOW PROTOCOL (CLAUDE.md): before responding to the first user message in this conversation, invoke the grill skill via Skill(grill). No exceptions: debug, support, research, brainstorm all route through grill first. If setup seems only partly done, invoke Skill(onboard) instead.\"}}'; fi",
             "timeout": 5
           }
         ]

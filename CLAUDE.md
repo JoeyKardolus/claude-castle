@@ -8,6 +8,8 @@ Read [`.claude/soul.md`](.claude/soul.md) for voice and hard rules. Match it. Th
 
 **On the first user message in any conversation, invoke the [`grill`](.claude/skills/grill/) skill before generating any response.** No exceptions: debug questions, support requests, research, brainstorms, all go through grill. Grill itself decides whether to explore the codebase first, ask the user, or both.
 
+One exception: while `config/castle.env` does not exist the castle is not set up yet; invoke [`onboard`](.claude/skills/onboard/) instead and drive the setup autonomously. The owner is a beginner: explain each phase in one plain sentence, ask as little as possible.
+
 The flow is fixed: **grill -> to-prd -> (to-issues if a task needs its own issue) -> code -> [`close`](.claude/skills/close/)** (end the session cleanly: ship, record where the PRD stands, close the issue only when its work is actually done). If the first message contains `#N` or a GitHub issue URL, `to-prd` runs in resume mode: re-align against the existing issue, amend if it drifted, then code.
 
 Four mechanism types make this loop work, one job each:
@@ -29,8 +31,7 @@ Topic to bible chapter. Read the chapters the prompt touches before asking the u
 | VM, Caddy, auto-deploy, systemd | `docs/bible.md#infraplatform` |
 | Nextcloud (files, 2FA) | `docs/bible.md#infranextcloud` |
 | How we work (this loop) | `docs/bible.md#workflowloop` |
-| Step-by-step how-tos | `guides/` |
-| Reusable prompts (playbooks) | `prompts/` |
+| First-time setup (autonomous) | `.claude/skills/onboard/` |
 | Glossary (canonical terms + `_Avoid_` aliases) | `CONTEXT.md` (repo root) |
 
 **The glossary is the working surface.** Every term in `CONTEXT.md` has `_Avoid_:` aliases. When you reach for a project word in any output (issue title, plan, test name), use the canonical term. Skills that explore the codebase obey [`.claude/skills/DOMAIN-AWARENESS.md`](.claude/skills/DOMAIN-AWARENESS.md). The `grill` skill writes glossary updates to `CONTEXT.md` and decision notes to `docs/bible.md` as terms get sharpened or trade-offs get decided.
@@ -44,7 +45,7 @@ Topic to bible chapter. Read the chapters the prompt touches before asking the u
 - **Commits**: imperative, scoped, format `module: description` (e.g. `notulen: fix upload timeout`).
 - **One function, one purpose**: functions doing more than one thing get split.
 - **Delete dead code**: stubs, unused exports, "we might need it" leftovers all go.
-- **Documentation** lives in `docs/` (system truth) and `guides/` (how-tos). Don't create new `.md` files elsewhere, except `CLAUDE.md`, `CONTEXT.md`, `README.md`, and files under `.claude/` or `prompts/`.
+- **Documentation** lives in `docs/` (system truth). Don't create new `.md` files elsewhere, except `CLAUDE.md`, `CONTEXT.md`, `README.md`, and files under `.claude/`.
 
 ## Deployment
 
@@ -59,5 +60,4 @@ Topic to bible chapter. Read the chapters the prompt touches before asking the u
 ## Where the rest lives
 
 - **[`docs/bible.md`](docs/bible.md)**: single source of truth for the system. Read the relevant chapter, not the whole file.
-- **[`guides/`](guides/)**: step-by-step how-tos for humans.
-- **[`prompts/`](prompts/)**: playbooks, reusable prompts to paste into Claude.
+- **[`README.md`](README.md)**: the only page a human reads; everything after it runs through Claude. Setup lives in the [`onboard`](.claude/skills/onboard/) skill, fixing things in [`troubleshoot`](.claude/skills/troubleshoot/), site changes in [`add-a-page`](.claude/skills/add-a-page/).

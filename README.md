@@ -1,51 +1,75 @@
 # Claude Castle
 
-Your own castle on the internet, run by you and Claude.
+Your own castle on the internet, built for you by Claude.
 
-This kit gives you, starting from zero, your own full stack:
+You get your own website, your own private cloud storage (Nextcloud, with two-factor login), and notulen: record a meeting in the browser, get written minutes back. Everything runs on one small server you rent at Scaleway. You never manage it by hand: you tell Claude what you want, Claude does the work, and every change goes live within about two minutes.
 
-- **Your own website** at your own domain, with automatic HTTPS.
-- **Notulen**: record a meeting in the browser, get structured written minutes back.
-- **Nextcloud**: your own private cloud storage (like Dropbox, but yours), with two-factor login enforced.
-- **A Claude workday system**: Claude Code works inside this repo with skills, a memory that persists, and a fixed workflow (it interviews you first, writes a plan as a GitHub issue, builds it, then closes the session cleanly).
+You type the commands below once. After that, Claude Code does everything else, including setting up the server. It will ask you for one Scaleway API key along the way and walk you through the rest.
 
-Everything runs on one small server you rent at Scaleway (a European cloud provider). You push changes to GitHub; the server picks them up and redeploys itself within about 2 minutes. **Push = deploy.**
+## 1. Get a terminal
 
-## The one rule
+**Windows**: open PowerShell as administrator, run this, then restart your computer and open the new "Ubuntu" app:
 
-You almost never type server commands yourself. You open Claude Code in this folder and paste a playbook from `prompts/`. Claude runs the commands, explains what it is doing, and asks before anything risky.
-
-## Start here
-
-1. Read [`guides/00-start-here.md`](guides/00-start-here.md). It walks you through everything in order.
-2. Once the tools from guide 02 are installed, run:
-
-```bash
-./setup.sh
+```
+wsl --install
 ```
 
-It checks your tools, asks a few questions (your domain, your GitHub name), and wires up Claude's memory.
+**Mac**: open the built-in Terminal app. Done.
 
-## The map
+## 2. Make your own copy of this project
 
-| Folder | What it is |
-|---|---|
-| `guides/` | Step-by-step guides, start at 00 |
-| `prompts/` | Playbooks you paste into Claude Code |
-| `apps/website/` | Your website, edit and push |
-| `apps/notulen/` | The meeting-minutes app |
-| `infra/` | Server plumbing: Caddy, deploy loop, Nextcloud, systemd |
-| `.claude/` | Claude's skills, voice (soul.md), and memory |
-| `config/` | Your settings (`castle.env`), created by setup.sh |
-| `docs/bible.md` | The single source of truth about your system |
-| `CONTEXT.md` | Your glossary: what words mean here |
+In the browser: create a free account at github.com if you have none, come back to this page, and click **Use this template**, then **Create a new repository**. Name it `claude-castle`, keep it **Private**.
 
-## What it costs
+## 3. Connect your terminal to GitHub
 
-- Server: roughly 10 to 15 euro per month.
-- Domain name: roughly 10 euro per year.
-- Anthropic API key (used by notulen to write minutes): pay per use, typically cents per meeting. This is separate from your claude.ai subscription.
+Paste this in the terminal, press Enter through the questions:
 
-## Safety
+```
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519 && cat ~/.ssh/id_ed25519.pub
+```
 
-Secrets (passwords, API keys) live only in `config/castle.env` on your laptop and `/opt/castle/castle.env` on the server. Both are ignored by git. Never paste a secret into a file that gets committed.
+Copy the line it prints (starts with `ssh-ed25519`), go to github.com/settings/ssh/new, paste it, save.
+
+## 4. Download your castle and the two tools
+
+Replace YOURNAME with your GitHub username:
+
+```
+git clone git@github.com:YOURNAME/claude-castle.git
+curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+Close the terminal, open it again (so the new tools are found), then:
+
+```
+cd claude-castle && uv sync
+```
+
+## 5. Start Claude
+
+```
+claude --dangerously-skip-permissions
+```
+
+The first time, it opens a browser page: log in with your Claude subscription. The scary-looking flag means Claude acts without asking permission for every small step; that is what makes the setup hands-free. Only use it inside this folder.
+
+## 6. Say hello
+
+Type:
+
+```
+set up my castle
+```
+
+Claude takes over from here. It checks your tools, asks for a Scaleway API key (it shows you exactly where to click to get one), creates your server, and sets up the website, Nextcloud, and notulen. It only interrupts you when it truly needs you: the key, an optional domain name, and scanning two QR codes for your secure login.
+
+## Afterwards
+
+Daily use is one habit: open the terminal, run `cd claude-castle && claude --dangerously-skip-permissions`, and say what you want. "Add a photo page to my site", "something is broken", "how much is my server costing?". Claude does it; changes go live in about two minutes.
+
+Two things worth asking Claude for early on: "set up backups" (the server is the only place your cloud files live until you do) and, once a month, "update the server and everything on it".
+
+## Costs
+
+Server about 10 to 15 euro per month, a domain name (optional) about 10 euro per year, and if you turn on written meeting minutes, an Anthropic API key that costs cents per meeting (separate from your Claude subscription).
