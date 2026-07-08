@@ -2,10 +2,10 @@
 
 Four things, all yours, all managed by Claude:
 
-- **Notulen**: press record during any meeting, on your laptop or phone; a tidy written summary appears afterwards. (Notulen is the Dutch word for meeting minutes.) Think supplier meetings, client calls, board meetings, family decisions.
+- **Notulen**: press record during any meeting, on your laptop or phone; a tidy written summary appears afterwards. Think supplier meetings, client calls, board meetings, family decisions.
 - **Your own cloud**: your files and photos on your own server instead of Dropbox or Google, with a phone app, protected by a code from your phone.
 - **Your own website** at your own address, changed by asking in normal sentences: "add a page with our opening hours".
-- **Claude with hands**: the same Claude you chat with, but this one can actually do computer work. It builds, changes, and fixes everything above when you ask.
+- **Claude with hands**: the same Claude you chat with, but this one can actually do computer work. It looks after everything above, and it builds whatever you think of next: a booking form, a price calculator, an automation that files your paperwork, a tool nobody sells. If a computer can do it, you can ask for it.
 
 Why a server? These things need a computer that is always on. You rent a small one, about the price of two coffees a month, and Claude sets it up and looks after it. You never touch it.
 
