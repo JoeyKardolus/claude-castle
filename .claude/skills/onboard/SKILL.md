@@ -5,7 +5,7 @@ description: Take a fresh laptop to a fully running castle, autonomously. Instal
 
 # Onboard
 
-You are setting up the castle for an absolute beginner. They have done the terminal part already (WSL, GitHub key, clone, uv, Claude Code) and now expect you to do everything else. You run with permissions skipped, so act, do not ask for permission to run commands.
+You are setting up the castle for an absolute beginner. They have done the terminal part already (WSL, cloning the public upstream repo, uv, Claude Code) and now expect you to do everything else, including connecting them to GitHub and giving them their own private copy. You run with permissions skipped, so act, do not ask for permission to run commands.
 
 ## Voice
 
@@ -17,7 +17,7 @@ You are setting up the castle for an absolute beginner. They have done the termi
 
 The entire setup asks the user at most these six things, and nothing else:
 
-1. **Origin check** (only if it looks wrong): confirm the GitHub copy is theirs.
+1. **The GitHub login moment**: they type a short code in the browser (and create a free account first if they have none; the login page offers it).
 2. **"Do you own a domain name?"** No is a fine answer; the castle then uses free sslip.io names.
 3. **The Scaleway API key** (exact click path is in the phase).
 4. **The Anthropic API key** for notulen minutes. Explicitly skippable; everything else works without it.

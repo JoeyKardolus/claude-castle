@@ -16,26 +16,12 @@ wsl --install
 
 **Mac**: open the built-in Terminal app. Done.
 
-## 2. Make your own copy of this project
+## 2. Download your castle and the two tools
 
-In the browser: create a free account at github.com if you have none, come back to this page, and click **Use this template**, then **Create a new repository**. Name it `claude-castle`, keep it **Private**.
-
-## 3. Connect your terminal to GitHub
-
-Paste this in the terminal, press Enter through the questions:
+Paste this in the terminal. On a Mac, the first command may pop up a window offering to install "command line developer tools": click Install, wait, then run it again.
 
 ```
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519 && cat ~/.ssh/id_ed25519.pub
-```
-
-Copy the line it prints (starts with `ssh-ed25519`), go to github.com/settings/ssh/new, paste it, save.
-
-## 4. Download your castle and the two tools
-
-Replace YOURNAME with your GitHub username. On a Mac, the first command may pop up a window offering to install "command line developer tools": click Install, wait, then run the command again.
-
-```
-git clone git@github.com:YOURNAME/claude-castle.git
+git clone https://github.com/JoeyKardolus/claude-castle.git
 curl -LsSf https://astral.sh/uv/install.sh | sh
 curl -fsSL https://claude.ai/install.sh | bash
 ```
@@ -46,7 +32,7 @@ Close the terminal, open it again (so the new tools are found), then:
 cd claude-castle && uv sync
 ```
 
-## 5. Start Claude
+## 3. Start Claude
 
 ```
 claude agents --dangerously-skip-permissions
@@ -54,7 +40,7 @@ claude agents --dangerously-skip-permissions
 
 The first time, it opens a browser page: log in with your Claude subscription. What opens next is your control room: type what you want done, and Claude works on it while you watch. The scary-looking flag means Claude acts without asking permission for every small step; that is what makes the setup hands-free. Only use it inside this folder.
 
-## 6. Say hello
+## 4. Say hello
 
 Type:
 
@@ -62,7 +48,7 @@ Type:
 set up my castle
 ```
 
-Claude takes over from here. It checks your tools, asks for a Scaleway API key (it shows you exactly where to click to get one), creates your server, and sets up the website, Nextcloud, and notulen. It only interrupts you when it truly needs you: the key, an optional domain name, and scanning two QR codes for your secure login.
+Claude takes over from here. It connects you to GitHub (you type a short code in the browser; a free account is made on the spot if you have none), gives you your own private copy of the castle, asks for a Scaleway API key (it shows you exactly where to click to get one), creates your server, and sets up the website, Nextcloud, and notulen. It only interrupts you when it truly needs you: the key, an optional domain name, and scanning two QR codes for your secure login.
 
 ## Afterwards
 

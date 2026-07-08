@@ -12,16 +12,16 @@ Then start phase 1 without waiting, unless they object.
 
 ## Phase 1: laptop tools and GitHub
 
-**Already done?** `gh auth status` succeeds, `~/.claude/projects/.../memory` is a symlink into this repo, and origin looks like theirs. Then skip.
+**Already done?** `gh auth status` succeeds, `~/.claude/projects/.../memory` is a symlink into this repo, and the origin owner equals `gh api user --jq .login`. Then skip.
 
 1. Verify `git --version`, `uv --version`, `claude --version` all print. These were installed by hand before this conversation; if one is missing, install it (git via apt/xcode-select, uv via the astral.sh install script) and say what you did.
-2. If `git config user.name` or `user.email` is empty, set them from the GitHub account after login (step 4), using `gh api user` for the name and the noreply email if none is public.
-3. Install the GitHub CLI if missing. Ubuntu/WSL: the official apt repo (keyring plus `apt install gh`). Mac: `brew install gh`. Warn first: "your computer will ask for your password now; that is the normal way it approves installing software".
-4. Log in: `gh auth login --hostname github.com --git-protocol ssh --web`. Tell the user: a code appears, the browser opens, they type the code and click approve. That is all they do.
-5. Run `bash .claude/bootstrap.sh` from the repo root. Explain in one sentence: this makes my notes about your setup live inside the project, so they survive and get backed up with everything else.
-6. Check `git remote get-url origin`. Compare the owner part with `gh api user --jq .login`. If they differ, this is **question 1 of the budget**: show both names and ask if this copy is really theirs. If it is the upstream template, stop and help them make their own copy first (GitHub page of the template, "Use this template", private repo, then re-clone).
+2. Install the GitHub CLI if missing. Ubuntu/WSL: the official apt repo (keyring plus `apt install gh`). Mac: `brew install gh`. Warn first: "your computer will ask for your password now; that is the normal way it approves installing software".
+3. Log in (**question 1 of the budget**): first ask "do you already have a GitHub account?"; if not, send them to github.com/signup (free, two minutes) and wait. Then `gh auth login --hostname github.com --git-protocol https --web` followed by `gh auth setup-git`. Tell the user: a code appears, the browser opens, they type the code and click approve. That is all they do. HTTPS plus `setup-git` means no ssh keys to manage on the GitHub side.
+4. If `git config user.name` or `user.email` is empty, set them from the GitHub account, using `gh api user` for the name and the noreply email if none is public.
+5. Give them their own private copy. They cloned the public upstream, so check `git remote get-url origin`: if the owner is not their login, run `gh repo create claude-castle --private` under their account, rename the current origin to `upstream`, add their new repo as `origin`, and `git push -u origin main`. Say in one sentence: your castle now has its own private home on GitHub; the original stays connected as upstream for future improvements.
+6. Run `bash .claude/bootstrap.sh` from the repo root. Explain in one sentence: this makes my notes about your setup live inside the project, so they survive and get backed up with everything else.
 
-**Verify**: `gh auth status` ok; `git remote get-url origin` owner matches their GitHub login (or they confirmed it).
+**Verify**: `gh auth status` ok; `git remote get-url origin` owner equals their GitHub login; `git push` works (the bootstrap memory commit or an empty push proves it).
 
 ## Phase 2: Scaleway CLI
 
@@ -53,7 +53,7 @@ Then start phase 1 without waiting, unless they object.
 
 **Already done?** An instance named `castle` exists and SERVER_IP in config/castle.env matches its public IP. Then skip.
 
-1. Make sure the laptop's ssh key is at Scaleway: if `scw iam ssh-key list` does not contain the content of `~/.ssh/id_ed25519.pub`, add it with `scw iam ssh-key create name=castle-laptop public-key="$(cat ~/.ssh/id_ed25519.pub)"`.
+1. Make sure the laptop has an ssh key and Scaleway knows it: if `~/.ssh/id_ed25519` does not exist, create it with `ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519` (one sentence to the user: this is the key that lets me reach your server securely). If `scw iam ssh-key list` does not contain the content of `~/.ssh/id_ed25519.pub`, add it with `scw iam ssh-key create name=castle-laptop public-key="$(cat ~/.ssh/id_ed25519.pub)"`.
 2. Check `scw instance server list name=castle`. If one exists, reuse it and say so.
 3. Otherwise tell the user in one line that the paid part starts now (10 to 15 euros per month, deletable any time), then create it: `scw instance server create type=DEV1-M zone=<zone> image=ubuntu_noble name=castle ip=new`. If DEV1-M is unavailable in the zone, pick the closest current small type and say which. Use the latest Ubuntu LTS image available.
 4. Wait until the state is running and it has a public IP (poll `scw instance server get`). Fresh servers take a minute or two to accept ssh; retry `ssh -o StrictHostKeyChecking=accept-new root@<IP> true` for a couple of minutes.
