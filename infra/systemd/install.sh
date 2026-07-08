@@ -28,6 +28,16 @@ fi
 mkdir -p /var/lib/castle
 chown castle:castle /var/lib/castle
 
+# Seed the bookmark with what is deployed right now. Without this, the
+# timer's first run sees "no prior SHA", treats everything as changed, and
+# does a full redeploy seconds after the initial deploy finished — a
+# pointless rebuild that can race containers still settling.
+if [[ ! -f /var/lib/castle/last-deployed-sha ]] && current_sha=$(git -C /opt/castle/repo rev-parse HEAD 2>/dev/null); then
+    echo "$current_sha" > /var/lib/castle/last-deployed-sha
+    chown castle:castle /var/lib/castle/last-deployed-sha
+    echo "seeded deploy bookmark at $current_sha"
+fi
+
 echo "installing units:"
 for unit in "$SCRIPT_DIR"/*.service "$SCRIPT_DIR"/*.timer; do
     echo "  $(basename "$unit")"
