@@ -203,5 +203,5 @@ for cls in "${EVENT_CLASSES[@]}"; do
 done
 
 log "all three listeners registered at $SYNC_URL"
-log "deliveries run through Nextcloud background jobs (the cron container), so a sync can take a few minutes"
+log "deliveries run through Nextcloud background jobs (the cron container), so a sync can take up to about ten minutes"
 exit 0
