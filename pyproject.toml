@@ -1,0 +1,34 @@
+[project]
+name = "castle"
+version = "0"
+description = "Workspace root for the castle stack. Members own their own deps; this file enumerates them and pins the app-level extras."
+requires-python = ">=3.12"
+# The notulen app itself (apps/notulen/) is not an installed package: it is
+# imported as `apps.notulen.*` from the repo root (uvicorn and pytest both
+# put the root on sys.path). Its third-party deps live here.
+dependencies = [
+    "dashkit",
+    "castle-gpu-jobs",
+    "boto3>=1.34",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+# CPU transcription fallback (heavy: pulls ctranslate2 + model tooling).
+# The notulen app imports faster_whisper lazily, so the base install stays
+# lean; install with `uv sync --extra whisper` to transcribe locally.
+whisper = ["faster-whisper>=1.0"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+# Root is a virtual workspace anchor, not an installable package.
+package = false
+
+[tool.uv.workspace]
+members = ["lib/dashkit", "infra/gpu-jobs"]
+
+[tool.uv.sources]
+dashkit = { workspace = true }
+castle-gpu-jobs = { workspace = true }

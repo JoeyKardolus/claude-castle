@@ -1,0 +1,24 @@
+# Runs one deploy cycle (see infra/auto-deploy/auto-deploy.sh).
+# Started by auto-deploy.timer every 2 minutes — you never start this by
+# hand, but you CAN: sudo systemctl start auto-deploy.service
+[Unit]
+Description=Deploy the castle when origin/main changes
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=oneshot
+# The 'castle' user must be in the docker group (install.sh checks this).
+User=castle
+Group=castle
+WorkingDirectory=/opt/castle/repo
+ExecStart=/opt/castle/repo/infra/auto-deploy/auto-deploy.sh
+# Builds can be slow on a small VM; give them room.
+TimeoutStartSec=30min
+# Keep the running services responsive while a build runs.
+Nice=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

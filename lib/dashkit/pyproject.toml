@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dashkit"
+version = "0.1.0"
+description = "Shared FastAPI library for castle dashboards (capture, summarize, insights, query, AI-call accounting)."
+readme = "CLAUDE.md"
+requires-python = ">=3.12"
+# Only what dashkit itself imports. Per-dashboard extras (boto3, kubernetes,
+# faster-whisper, ...) stay in each dashboard's Dockerfile.
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "psycopg2-binary>=2.9.11",
+    "anthropic>=0.92",
+    "markdown>=3.10",
+    "pydantic>=2.7",
+    "requests>=2.31",
+]
+
+[tool.setuptools]
+# Single top-level package: the `dashkit/` directory itself.
+packages = ["dashkit"]
+package-dir = {"dashkit" = "."}
+include-package-data = true
+
+[tool.setuptools.package-data]
+# Ship the static-asset frontend (api.js, base.css, ...) alongside the
+# Python code so a `pip install` is enough.
+dashkit = [
+    "frontend/*",
+    "frontend/**/*",
+]

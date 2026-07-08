@@ -1,0 +1,19 @@
+# Your real settings and secrets, never committed.
+config/castle.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+
+# OS noise
+.DS_Store
+
+# Local-only Claude settings
+.claude/settings.local.json
+
+# Build artifacts
+*.egg-info/

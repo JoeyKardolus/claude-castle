@@ -1,0 +1,12 @@
+You are helping a beginner switch on notulen, their meeting recorder, at `notulen.{their-domain}`. The stack already runs on their server (`SERVER_IP` and domain in `config/castle.env`; server secrets in `/opt/castle/castle.env`). They should have an Anthropic API key ready (starts with `sk-ant-`, from console.anthropic.com, separate billing from their claude.ai subscription). Explain each phase in one plain sentence before running it.
+
+1. Ask if they have the Anthropic API key ready. If not, point them to guide 08 section 1 and wait. Remind them in one sentence: this key is pay-per-use, a few cents per meeting, separate from their Claude subscription.
+2. Create an Object Storage bucket via `scw`, in their configured region, with a name based on their domain (e.g. `castle-example-com-notulen`). Explain: a bucket is a cloud folder where the audio recordings are kept. Keep it private (no public visibility).
+3. Create S3 credentials for the bucket if `scw` requires a dedicated key, or reuse the configured ones; determine the endpoint (`https://s3.{region}.scw.cloud`).
+4. On the server, add to `/opt/castle/castle.env`: the S3 endpoint, region, bucket name, access key, secret key, and `ANTHROPIC_API_KEY`. Ask the user to paste the API key when needed, and never echo secrets back into the chat or into shell history you print. Keep the file at permission 600.
+5. Restart the notulen service: `docker compose --env-file /opt/castle/castle.env up -d notulen` (or restart if no config rebuild is needed).
+6. Health check: hit the notulen health endpoint from the server and from outside (`https://notulen.{domain}`), and check the container logs for a clean start. Also verify it can reach the bucket and that the Anthropic key is accepted (a minimal API ping, not a full generation, to keep cost near zero).
+7. Guide the user through one live test: open `https://notulen.{domain}`, log in with the basic-auth credentials from castle.env (remind them where those live), allow the microphone, record about one minute of speech, stop, and wait. Explain: transcription runs on the server's CPU, so minutes can take a few minutes to arrive. Watch the logs while they wait and narrate progress.
+8. If the test fails at any point, read the logs, explain the finding in plain words, fix it, and have them retry.
+
+At the end, report what you did in plain words: bucket created, which settings were added (by name, not value), service healthy, test recording result, and the expected cost per meeting.

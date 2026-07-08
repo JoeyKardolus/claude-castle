@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "castle-gpu-jobs"
+version = "0.1.0"
+description = "Optional K8s GPU Job dispatch for the castle stack (the notulen dashboard falls back to CPU transcription without it)."
+requires-python = ">=3.12"
+dependencies = [
+    "kubernetes>=29",
+]
+
+[tool.setuptools.packages.find]
+include = ["gpu_jobs*"]

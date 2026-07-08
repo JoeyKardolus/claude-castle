@@ -1,0 +1,165 @@
+# docker-compose.yml — the whole castle in one file.
+#
+# Every service below is one container. Start everything:
+#
+#   docker compose --env-file /opt/castle/castle.env up -d
+#
+# Secrets and settings live in /opt/castle/castle.env on the VM — NEVER in
+# git. The ${VAR} references below are filled in from that file at start
+# time (that's what --env-file does). Variables written as ${VAR:?...} are
+# required and compose refuses to start without them; ${VAR:-default} has a
+# safe default. The full list of required variables is in infra/README.md.
+
+name: castle
+
+services:
+  # ── Caddy: HTTPS front door ──────────────────────────────────────────────
+  # The only container that talks to the internet. Terminates TLS (automatic
+  # Let's Encrypt certificates) and routes each (sub)domain to the right
+  # container. Config: infra/caddy/Caddyfile.
+  caddy:
+    image: caddy:2
+    container_name: castle-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"     # plain HTTP — Caddy redirects it to HTTPS
+      - "443:443"   # HTTPS
+      - "443:443/udp"  # HTTP/3
+    environment:
+      CASTLE_DOMAIN: ${CASTLE_DOMAIN:?set CASTLE_DOMAIN in /opt/castle/castle.env}
+      NOTULEN_BASIC_AUTH_USER: ${NOTULEN_BASIC_AUTH_USER:?set NOTULEN_BASIC_AUTH_USER}
+      NOTULEN_BASIC_AUTH_HASH: ${NOTULEN_BASIC_AUTH_HASH:?set NOTULEN_BASIC_AUTH_HASH}
+    volumes:
+      # The whole directory (not just the file) so a `git pull` on the VM
+      # updates the config in place; auto-deploy then tells Caddy to reload.
+      - ./infra/caddy:/etc/caddy:ro
+      - caddy_data:/data      # TLS certificates live here — keep this volume!
+      - caddy_config:/config
+    depends_on:
+      - website
+      - notulen
+      - nextcloud
+
+  # ── Website: the public static page ─────────────────────────────────────
+  website:
+    build:
+      context: .
+      dockerfile: infra/docker/website/Dockerfile
+    container_name: castle-website
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ > /dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Notulen: the meeting-minutes dashboard ───────────────────────────────
+  # Built from this repo (the app lives in apps/notulen/, the Dockerfile in
+  # infra/docker/notulen/). Reachable only through Caddy's basic_auth door.
+  notulen:
+    build:
+      context: .
+      dockerfile: infra/docker/notulen/Dockerfile
+    container_name: castle-notulen
+    restart: unless-stopped
+    environment:
+      # Postgres connection string, assembled from the same variables the
+      # postgres container uses — one password, defined once.
+      DB_URL: postgresql://${POSTGRES_USER:?set POSTGRES_USER}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:?set POSTGRES_DB}
+      # Object storage for uploaded audio (any S3-compatible provider).
+      S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT}
+      S3_REGION: ${S3_REGION:-fr-par}
+      S3_BUCKET: ${S3_BUCKET:?set S3_BUCKET}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+      # Claude API key for generating the minutes.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY}
+      # Language the minutes are written in.
+      MINUTES_LANGUAGE: ${MINUTES_LANGUAGE:-nl}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # The notulen image is Python-based, so probe with python instead of
+      # relying on curl/wget being installed.
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Postgres: one database server for notulen AND Nextcloud ─────────────
+  # POSTGRES_* creates the notulen database on first boot; the init script
+  # (infra/nextcloud/postgres-init.sh) creates a second, separate database
+  # for Nextcloud right after.
+  postgres:
+    image: postgres:16
+    container_name: castle-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+      # Used by the init script to create the Nextcloud database + user.
+      NEXTCLOUD_DB_NAME: ${NEXTCLOUD_DB_NAME:?set NEXTCLOUD_DB_NAME}
+      NEXTCLOUD_DB_USER: ${NEXTCLOUD_DB_USER:?set NEXTCLOUD_DB_USER}
+      NEXTCLOUD_DB_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:?set NEXTCLOUD_DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/nextcloud/postgres-init.sh:/docker-entrypoint-initdb.d/10-nextcloud-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Nextcloud: private file storage, calendars, contacts ────────────────
+  # First boot auto-installs using the NEXTCLOUD_ADMIN_* credentials, then
+  # you log in at https://cloud.<your-domain> and enable two-factor auth
+  # (see infra/nextcloud/README.md — 2FA is enforced for everyone).
+  nextcloud:
+    image: nextcloud:apache
+    container_name: castle-nextcloud
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${NEXTCLOUD_DB_NAME}
+      POSTGRES_USER: ${NEXTCLOUD_DB_USER}
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:?set NEXTCLOUD_ADMIN_USER}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:?set NEXTCLOUD_ADMIN_PASSWORD}
+      # Nextcloud only answers requests addressed to this hostname.
+      NEXTCLOUD_TRUSTED_DOMAINS: cloud.${CASTLE_DOMAIN}
+      # It sits behind Caddy, so tell it what the outside world sees.
+      OVERWRITEHOST: cloud.${CASTLE_DOMAIN}
+      OVERWRITEPROTOCOL: https
+      TRUSTED_PROXIES: 172.16.0.0/12  # the docker network Caddy lives on
+      APACHE_DISABLE_REWRITE_IP: 1
+    volumes:
+      - nextcloud_data:/var/www/html   # all files + config — keep this volume!
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Nextcloud cron: background jobs ──────────────────────────────────────
+  # Same image, but runs Nextcloud's cron.php every 5 minutes instead of the
+  # web server. Without it, background tasks (previews, cleanup, calendar
+  # reminders) never run.
+  nextcloud-cron:
+    image: nextcloud:apache
+    container_name: castle-nextcloud-cron
+    restart: unless-stopped
+    entrypoint: /cron.sh
+    volumes:
+      - nextcloud_data:/var/www/html
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nextcloud:
+        condition: service_started
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  nextcloud_data:

@@ -1,0 +1,15 @@
+# Fires auto-deploy.service every 2 minutes. This timer is the whole
+# "CI/CD pipeline": push to main on GitHub, and within ~2 minutes the VM
+# pulls and deploys it.
+[Unit]
+Description=Check for new commits on origin/main every 2 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+AccuracySec=15s
+# If the VM was off when a tick was due, fire once right after boot.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

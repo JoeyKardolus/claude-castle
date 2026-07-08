@@ -1,0 +1,76 @@
+# Caddyfile — the front door of the castle.
+#
+# Caddy terminates HTTPS for every domain below and forwards traffic to the
+# right container on the internal docker network. Certificates come from
+# Let's Encrypt automatically — you configure NOTHING for TLS beyond pointing
+# your DNS records (A/AAAA for the domain and both subdomains) at this VM.
+#
+# {$CASTLE_DOMAIN} is replaced at startup from the CASTLE_DOMAIN environment
+# variable (set in /opt/castle/castle.env, passed in via docker-compose.yml).
+# Example: CASTLE_DOMAIN=castle.example.com
+
+# ── Main website ─────────────────────────────────────────────────────────────
+# Public. The static "It works" page served by the website container.
+{$CASTLE_DOMAIN} {
+	reverse_proxy website:80
+
+	header {
+		# Tell browsers to always use HTTPS for this domain.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Don't let browsers guess content types.
+		X-Content-Type-Options nosniff
+	}
+}
+
+# ── Notulen dashboard ────────────────────────────────────────────────────────
+# Private. Protected by HTTP Basic Auth: the browser pops up a login box and
+# Caddy checks the password before anything reaches the app.
+#
+# The password is stored as a bcrypt HASH, never in plain text. Generate one:
+#   docker compose exec caddy caddy hash-password
+# and put the result in /opt/castle/castle.env as NOTULEN_BASIC_AUTH_HASH.
+#
+# (Bigger setups replace this with single sign-on, e.g. oauth2-proxy in front
+# of an identity provider. Out of scope here: basic_auth is plenty for a
+# small private stack.)
+notulen.{$CASTLE_DOMAIN} {
+	basic_auth {
+		{$NOTULEN_BASIC_AUTH_USER} {$NOTULEN_BASIC_AUTH_HASH}
+	}
+
+	# The notulen container listens on port 8000 inside the docker network.
+	reverse_proxy notulen:8000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		# Never cache dashboard pages — always show fresh data.
+		Cache-Control "no-cache, no-store, must-revalidate"
+	}
+}
+
+# ── Nextcloud ────────────────────────────────────────────────────────────────
+# Private files + calendars + contacts. Nextcloud brings its own login screen
+# (with enforced two-factor auth — see infra/nextcloud/README.md), so Caddy
+# just passes traffic through.
+cloud.{$CASTLE_DOMAIN} {
+	# Calendar and contacts apps discover the server through these two
+	# well-known URLs. Nextcloud expects the proxy to redirect them.
+	redir /.well-known/carddav /remote.php/dav/ 301
+	redir /.well-known/caldav /remote.php/dav/ 301
+
+	# Everything else goes straight to the Nextcloud container.
+	# (WebSockets — used by some Nextcloud apps — are proxied automatically
+	# by Caddy; no extra config needed.)
+	reverse_proxy nextcloud:80
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		# Don't let the browser cache the login page. A cached login page
+		# carries a stale CSRF token and produces confusing
+		# "session token expired" errors on first login.
+		Cache-Control "no-cache, no-store, must-revalidate"
+	}
+}
