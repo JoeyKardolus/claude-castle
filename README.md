@@ -49,10 +49,10 @@ cd claude-castle && uv sync
 ## 5. Start Claude
 
 ```
-claude --dangerously-skip-permissions
+claude agents --dangerously-skip-permissions
 ```
 
-The first time, it opens a browser page: log in with your Claude subscription. The scary-looking flag means Claude acts without asking permission for every small step; that is what makes the setup hands-free. Only use it inside this folder.
+The first time, it opens a browser page: log in with your Claude subscription. What opens next is your control room: type what you want done, and Claude works on it while you watch. The scary-looking flag means Claude acts without asking permission for every small step; that is what makes the setup hands-free. Only use it inside this folder.
 
 ## 6. Say hello
 
@@ -66,7 +66,7 @@ Claude takes over from here. It checks your tools, asks for a Scaleway API key (
 
 ## Afterwards
 
-Daily use is one habit: open the terminal, run `cd claude-castle && claude --dangerously-skip-permissions`, and say what you want. "Add a photo page to my site", "something is broken", "how much is my server costing?". Claude does it; changes go live in about two minutes.
+Daily use is one habit: open the terminal, run `cd claude-castle && claude agents --dangerously-skip-permissions`, and say what you want. "Add a photo page to my site", "something is broken", "how much is my server costing?". Claude does it; changes go live in about two minutes.
 
 Two things worth asking Claude for early on: "set up backups" (the server is the only place your cloud files live until you do) and, once a month, "update the server and everything on it".
 

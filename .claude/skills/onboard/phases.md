@@ -138,5 +138,5 @@ Work over ssh as root for steps 1 to 4, then switch to the `castle` user forever
 
 1. Write a memory note in `.claude/memory/` (a short file plus one index line in MEMORY.md): domain, server IP, region, instance type, bucket name, which phases ran, what was skipped (for example the Anthropic key), and the date. No passwords in memory, ever.
 2. Print the three addresses on their own lines: the website, `cloud.` and `notulen.`.
-3. Explain the daily loop in four lines: open a terminal, run `claude --dangerously-skip-permissions` in this folder, say what you want in plain words, and after I push, the change is live in about 2 minutes.
+3. Explain the daily loop in four lines: open a terminal, run `claude agents --dangerously-skip-permissions` in this folder, say what you want in plain words, and after I push, the change is live in about 2 minutes.
 4. Tell them: if anything ever looks broken, just say "something is broken" and I will investigate (the troubleshoot skill).
