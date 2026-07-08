@@ -40,4 +40,4 @@ for timer in "$SCRIPT_DIR"/*.timer; do
     systemctl enable --now "$(basename "$timer")"
 done
 
-echo "done. check with: systemctl list-timers | grep -E 'auto-deploy|purge'"
+echo "done. check with: systemctl list-timers | grep auto-deploy"

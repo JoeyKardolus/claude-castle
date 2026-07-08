@@ -12,7 +12,12 @@ RUN apt-get update -qq && apt-get install -y -qq git ffmpeg \
 # dashkit deps + notulen extras. faster-whisper is the CPU transcription
 # fallback (the default working path when no GPU cluster is configured);
 # kubernetes is only exercised when KUBECONFIG_DATA is set (optional GPU tier).
-RUN pip install --no-cache-dir \
+# Versions are pinned by constraints.txt (regenerate with:
+#   uv export --no-hashes --all-extras --no-emit-project --no-dev \
+#     -o infra/docker/notulen/constraints.txt
+# ) so image builds stay reproducible.
+COPY infra/docker/notulen/constraints.txt /tmp/constraints.txt
+RUN pip install --no-cache-dir -c /tmp/constraints.txt \
         fastapi \
         "uvicorn[standard]" \
         psycopg2-binary \

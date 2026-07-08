@@ -6,5 +6,4 @@
 - Your data lives in the `nextcloud_data` docker volume (files + config) and the `postgres_data` volume (metadata, in its own `NEXTCLOUD_DB_NAME` database) — back those two up and you can rebuild everything else from this repo.
 - `postgres-init.sh` runs automatically on the first boot of an empty postgres volume and creates Nextcloud's database + user; you never run it by hand.
 - Background jobs (previews, reminders, cleanup) are handled by the `nextcloud-cron` container in docker-compose.yml — nothing to install on the VM.
-- `purge_old_auth_logs.py` (daily systemd timer) deletes login/audit log rows older than 90 days from the notulen database — keep only the logs you actually need.
 - Nextcloud is reached only through Caddy over HTTPS; the container itself is never exposed to the internet.

@@ -32,7 +32,7 @@ Copy the line it prints (starts with `ssh-ed25519`), go to github.com/settings/s
 
 ## 4. Download your castle and the two tools
 
-Replace YOURNAME with your GitHub username:
+Replace YOURNAME with your GitHub username. On a Mac, the first command may pop up a window offering to install "command line developer tools": click Install, wait, then run the command again.
 
 ```
 git clone git@github.com:YOURNAME/claude-castle.git

@@ -1,7 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "mcp__github__*",
       "Bash(gh:*)"
     ]
   },
@@ -34,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmd=\"$CLAUDE_TOOL_ARG_command\"; if echo \"$cmd\" | grep -qE 'git\\s+push.*--force|git\\s+reset\\s+--hard'; then echo 'BLOCKED: Destructive git operation requires explicit user approval.' && exit 2; fi",
+            "command": "python3 -c 'import json,re,sys; c=(json.load(sys.stdin).get(\"tool_input\") or {}).get(\"command\",\"\"); m=bool(re.search(r\"git\\s+push\\b.*--force|git\\s+reset\\s+--hard\", c)); print(\"BLOCKED: destructive git operation requires explicit user approval.\" if m else \"\", file=sys.stderr); sys.exit(2 if m else 0)'",
             "timeout": 5
           }
         ]

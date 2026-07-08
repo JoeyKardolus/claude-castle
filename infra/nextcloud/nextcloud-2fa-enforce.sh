@@ -72,6 +72,13 @@ if [ "$MODE" = "--check" ]; then
     else
         log "OK — all users enrolled; enforce would succeed."
     fi
+    # Also report whether enforcement is actually ON, so "everyone enrolled"
+    # is never mistaken for "done" while enforcement is still off.
+    if occ twofactorauth:enforce 2>/dev/null | grep -qi "enforced for all users"; then
+        log "enforcement: ON"
+    else
+        log "enforcement: OFF — run this script without --check to turn it on"
+    fi
     exit 0
 fi
 

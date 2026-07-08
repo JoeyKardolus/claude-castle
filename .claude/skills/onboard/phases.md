@@ -16,7 +16,7 @@ Then start phase 1 without waiting, unless they object.
 
 1. Verify `git --version`, `uv --version`, `claude --version` all print. These were installed by hand before this conversation; if one is missing, install it (git via apt/xcode-select, uv via the astral.sh install script) and say what you did.
 2. If `git config user.name` or `user.email` is empty, set them from the GitHub account after login (step 4), using `gh api user` for the name and the noreply email if none is public.
-3. Install the GitHub CLI if missing. Ubuntu/WSL: the official apt repo (keyring plus `apt install gh`). Mac: `brew install gh`.
+3. Install the GitHub CLI if missing. Ubuntu/WSL: the official apt repo (keyring plus `apt install gh`). Mac: `brew install gh`. Warn first: "your computer will ask for your password now; that is the normal way it approves installing software".
 4. Log in: `gh auth login --hostname github.com --git-protocol ssh --web`. Tell the user: a code appears, the browser opens, they type the code and click approve. That is all they do.
 5. Run `bash .claude/bootstrap.sh` from the repo root. Explain in one sentence: this makes my notes about your setup live inside the project, so they survive and get backed up with everything else.
 6. Check `git remote get-url origin`. Compare the owner part with `gh api user --jq .login`. If they differ, this is **question 1 of the budget**: show both names and ask if this copy is really theirs. If it is the upstream template, stop and help them make their own copy first (GitHub page of the template, "Use this template", private repo, then re-clone).
@@ -43,9 +43,9 @@ Then start phase 1 without waiting, unless they object.
 1. Copy `config/castle.env.example` to `config/castle.env` if it does not exist.
 2. **Question 2 of the budget**: "Do you own a domain name (a web address like example.com)?"
    - **Yes**: use it as CASTLE_DOMAIN.
-   - **No**: the castle gets free names from sslip.io, derived from the server's address, like `1-2-3-4.sslip.io` with `notulen.` and `cloud.` in front. Explain: these work immediately, nothing to buy or configure; they are just less pretty. Leave CASTLE_DOMAIN for phase 4, when the server IP exists. If they want a real domain later, it is a one-variable swap plus three DNS records; recommend that once they like the castle.
+   - **No**: the castle gets free names from sslip.io, derived from the server's address, like `1-2-3-4.sslip.io` with `notulen.` and `cloud.` in front. Explain: these work immediately, nothing to buy or configure; they are just less pretty. Leave CASTLE_DOMAIN for phase 4, when the server IP exists. If they want a real domain later, it is one variable, three DNS records, and one Nextcloud setting Claude updates (`occ config:system:set trusted_domains`); recommend that once they like the castle.
 3. Fill CASTLE_REGION (from phase 2), GITHUB_REPO (owner/name from `git remote get-url origin`).
-4. Generate secrets locally, one `openssl rand -base64 24` each, for POSTGRES_PASSWORD, NEXTCLOUD_DB_PASSWORD, NEXTCLOUD_ADMIN_PASSWORD. Do not print them. Tell the user once: "Your passwords live in config/castle.env on this laptop and in /opt/castle/castle.env on the server. Git ignores both; they are never uploaded to GitHub."
+4. Generate secrets locally, one `openssl rand -hex 24` each, for POSTGRES_PASSWORD, NEXTCLOUD_DB_PASSWORD, NEXTCLOUD_ADMIN_PASSWORD. Only fill fields that are still empty; never regenerate one that already has a value. Do not print them. (Hex, not base64: these end up inside a database URL, where base64's `/` characters break parsing.) Tell the user once: "Your passwords live in config/castle.env on this laptop and in /opt/castle/castle.env on the server. Git ignores both; they are never uploaded to GitHub."
 
 **Verify**: read the file back; every field above is filled (CASTLE_DOMAIN may still be empty only on the sslip path).
 
@@ -63,7 +63,7 @@ Then start phase 1 without waiting, unless they object.
 
 ## Phase 5: DNS
 
-**Already done?** `dig +short <domain>`, `dig +short notulen.<domain>`, `dig +short cloud.<domain>` all return SERVER_IP. Then skip.
+**Already done?** `dig +short <domain>`, `dig +short notulen.<domain>`, `dig +short cloud.<domain>` all return SERVER_IP. Then skip. (`dig` is not preinstalled on fresh WSL Ubuntu; install it with `sudo apt-get install -y dnsutils` if missing.)
 
 - **Real domain**: print exactly this table with their real domain and IP, and explain in one sentence that an A record points a name at a server address, added at the website where they bought the domain (look for "DNS", "DNS records", or "Zone"):
 
@@ -80,35 +80,36 @@ Then start phase 1 without waiting, unless they object.
 
 ## Phase 6: deploy the stack
 
-**Already done?** All three URLs already return 2xx/3xx over HTTPS. Then skip. Partially done pieces (user exists, docker installed, repo cloned) are all safe to re-run past.
+**Already done?** All three URLs respond over HTTPS: 2xx/3xx for the website and `cloud.`, and 2xx/3xx **or 401** for `notulen.` (it sits behind a login; 401 means alive). Then skip. Partially done pieces (user exists, docker installed, repo cloned) are all safe to re-run past.
 
-Work over ssh as root for steps 1 to 3, then switch to the `castle` user forever after.
+Work over ssh as root for steps 1 to 4, then switch to the `castle` user forever after.
 
 1. `apt-get update && apt-get upgrade -y` on the server.
-2. Create the `castle` user if missing, copy root's `~/.ssh/authorized_keys` to it (owned by castle, mode 600), give it sudo. Explain: day to day the server runs as this ordinary user, not as the all-powerful root.
+2. Create the `castle` user if missing, copy root's `~/.ssh/authorized_keys` to it (owned by castle, mode 600), and give it passwordless sudo: write `castle ALL=(ALL) NOPASSWD:ALL` to `/etc/sudoers.d/castle`, mode 440 (the user has no password, so sudo would otherwise dead-end over ssh). Explain: day to day the server runs as this ordinary user, not as the all-powerful root.
 3. Install Docker Engine plus the compose plugin using Docker's official install path (their apt repository, or `curl -fsSL https://get.docker.com | sh`). Add castle to the `docker` group. Verify `docker --version` and `docker compose version`.
-4. Deploy key, so the server can read their private repo: as castle on the VM, `ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519 -C castle-vm-deploy` (skip if it exists), `ssh-keyscan github.com >> ~/.ssh/known_hosts`. Copy the public key back to the laptop and register it read-only: `gh repo deploy-key add <pubkey-file> --repo <owner>/<name> --title "castle vm (read-only)"`. Skip if a deploy key with that title already exists.
-5. `sudo mkdir -p /opt/castle && sudo chown castle:castle /opt/castle`, then as castle `git clone git@github.com:<owner>/<name>.git /opt/castle/repo` (or `git -C /opt/castle/repo pull --ff-only` if it exists).
-6. Write `/opt/castle/castle.env`, mode 600, from the laptop's config/castle.env plus:
+4. Add a 4 GB swap file if none exists (`swapon --show` empty): `fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`, plus a `/swapfile none swap sw 0 0` line in /etc/fstab. Explain in one sentence: transcription briefly needs more memory than the small server has, and the swap file is the cheap safety margin.
+5. Deploy key, so the server can read their private repo: as castle on the VM, `ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519 -C castle-vm-deploy` (skip if it exists), `ssh-keyscan github.com >> ~/.ssh/known_hosts`. Copy the public key back to the laptop and register it read-only: `gh repo deploy-key add <pubkey-file> --repo <owner>/<name> --title "castle vm (read-only)"`. Skip if a deploy key with that title already exists.
+6. `sudo mkdir -p /opt/castle && sudo chown castle:castle /opt/castle`, then as castle `git clone git@github.com:<owner>/<name>.git /opt/castle/repo` (or `git -C /opt/castle/repo pull --ff-only` if it exists).
+7. Write `/opt/castle/castle.env`, mode 600. **Only if the file does not exist yet.** If it already exists, never overwrite filled-in values: the only permitted change is replacing a literal `pending-phase-8` placeholder, and never regenerate the notulen password when a NOTULEN_BASIC_AUTH_HASH is already present (the user saved that password). For a fresh file, start from the laptop's config/castle.env plus:
    - A generated notulen password. Hash it with `docker run --rm caddy:2 caddy hash-password --plaintext '<password>'` and store the hash **wrapped in single quotes** as NOTULEN_BASIC_AUTH_HASH (it contains `$` characters that must not expand). Tell the user exactly once: "Your meeting recorder login is user `castle` with this password: <password>. Save it in your password manager now; I will not show it again." NOTULEN_BASIC_AUTH_USER stays `castle`.
    - S3_ENDPOINT and S3_REGION for their region. S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY, ANTHROPIC_API_KEY are not known yet; write the literal value `pending-phase-8` for each (compose refuses empty values). Be honest: the meeting recorder will start but cannot store recordings until phase 8 replaces these.
    - Explain mode 600 in one sentence: only the castle user can read the file.
-7. Start everything: in `/opt/castle/repo`, `docker compose --env-file /opt/castle/castle.env up -d --build`. Explain: each service runs in its own container, and Caddy fetches the HTTPS certificates automatically, which can take a minute or two.
-8. Install auto-deploy: `sudo /opt/castle/repo/infra/systemd/install.sh`. Explain: from now on, every push to GitHub goes live within about 2 minutes; pushing is the deploy button.
-9. Verify with retries while certificates settle (up to ~5 minutes): `curl -fsSL -o /dev/null -w '%{http_code}' https://<domain>` and the same for `notulen.` (expect 401 without login, that counts as alive) and `cloud.`. Also `docker compose --env-file /opt/castle/castle.env ps` shows everything up.
-10. **sslip certificate fallback**: sslip.io names usually get real Let's Encrypt certificates, but the sslip.io domain has a shared rate limit that sometimes bites. If Caddy's logs (`docker logs castle-caddy`) show a rate-limit error after several minutes, switch to Caddy's own internal certificates: add a global block at the top of `infra/caddy/Caddyfile` containing `local_certs`, commit, push, wait for auto-deploy, and re-verify with `curl -k`. Tell the user plainly: the sites work and traffic is still encrypted, but the browser will show a warning it cannot verify the certificate; buying a real domain later removes the warning, and swapping it in is one variable plus three DNS records.
+8. Start everything: in `/opt/castle/repo`, `docker compose --env-file /opt/castle/castle.env up -d --build`. Explain: each service runs in its own container, and Caddy fetches the HTTPS certificates automatically, which can take a minute or two.
+9. Install auto-deploy: `sudo /opt/castle/repo/infra/systemd/install.sh`. Explain: from now on, every push to GitHub goes live within about 2 minutes; pushing is the deploy button.
+10. Verify with retries while certificates settle (up to ~5 minutes): `curl -fsSL -o /dev/null -w '%{http_code}' https://<domain>` and the same for `notulen.` (expect 401 without login, that counts as alive) and `cloud.`. Also `docker compose --env-file /opt/castle/castle.env ps` shows everything up.
+11. **sslip certificate fallback**: sslip.io names usually get real Let's Encrypt certificates, but the sslip.io domain has a shared rate limit that sometimes bites. If Caddy's logs (`docker logs castle-caddy`) show a rate-limit error after several minutes, switch to Caddy's own internal certificates: add a global block at the top of `infra/caddy/Caddyfile` containing `local_certs`, commit, push, wait for auto-deploy, and re-verify with `curl -k`. Tell the user plainly: the sites work and traffic is still encrypted, but the browser will show a warning it cannot verify the certificate; buying a real domain later removes the warning, and swapping it in is one variable, three DNS records, and one Nextcloud setting Claude updates.
 
 **Verify**: three URLs respond over HTTPS; `docker compose ps` healthy. From here on, all ssh as `castle`, never root.
 
 ## Phase 7: Nextcloud accounts and 2FA
 
-**Already done?** Both everyday accounts exist (`occ user:list`) and `infra/nextcloud/nextcloud-2fa-enforce.sh --check` reports everyone enrolled with enforcement on. Then skip.
+**Already done?** Both everyday accounts exist (`occ user:list`) and `infra/nextcloud/nextcloud-2fa-enforce.sh --check` reports everyone enrolled AND `enforcement: ON`. The check prints both; enrolled-but-not-enforced means phase 7 is NOT done, run step 5.
 
 `occ` is Nextcloud's admin tool; run it on the VM as `docker compose --env-file /opt/castle/castle.env exec -T -u www-data nextcloud php occ ...` from /opt/castle/repo.
 
 1. Wait until `https://cloud.<domain>` serves the Nextcloud login page (first boot installs itself; this can take a few minutes). The admin account comes from castle.env automatically.
 2. **Question 5 of the budget**: ask for the two account names (one per person, a short lowercase username each; display names can be their real names).
-3. Create each account with a generated temporary password: `... occ user:add --password-from-env --display-name "<Name>" <username>` with `OC_PASS` set in the environment. Give each person their username and temporary password once, and tell them to change it after first login (personal settings, Security).
+3. Create each account with a generated temporary password. `docker compose exec` does not pass host variables through, so set it explicitly: `docker compose --env-file /opt/castle/castle.env exec -T -e OC_PASS='<temp password>' -u www-data nextcloud php occ user:add --password-from-env --display-name "<Name>" <username>`. Give each person their username and temporary password once, and tell them to change it after first login (personal settings, Security).
 4. TOTP enrolment, one person at a time, live (**question 6 of the budget**). First make sure the TOTP app is enabled: `... occ app:enable twofactor_totp`. Then for each person, and once for the admin account (one of them scans that too):
    - Have them install any authenticator app on their phone (Google Authenticator, Microsoft Authenticator, any TOTP app, all free).
    - They log in at `https://cloud.<domain>`, open Settings then Security, choose the TOTP option, scan the QR code with the app, type the 6-digit code.
@@ -126,7 +127,7 @@ Work over ssh as root for steps 1 to 3, then switch to the `castle` user forever
 2. The scw API key from phase 2 doubles as the storage credentials. On the server, replace the placeholders in /opt/castle/castle.env: S3_BUCKET, S3_ACCESS_KEY (the access key), S3_SECRET_KEY (the secret key). Keep the file at mode 600.
 3. **Question 4 of the budget**, the Anthropic key: "The meeting recorder uses Claude to write the minutes, through an API key with its own billing, separate from the Claude subscription. It costs a few cents per meeting. Get one at console.anthropic.com: Billing (add a card, set a monthly limit like 5 euros), then API keys, Create key, copy the `sk-ant-...` value. Or say skip: everything else works without it, and you can add it later by just asking me."
    - Key given: put it in /opt/castle/castle.env as ANTHROPIC_API_KEY.
-   - Skipped: leave the placeholder and say honestly that recordings will transcribe but no minutes will be written until a key is added.
+   - Skipped: leave the placeholder and say honestly what they will see: the recording is transcribed and saved, but the job then shows as **failed** with a missing-key error; the transcript is not lost, and adding a key later (just ask Claude) makes new recordings produce minutes.
 4. Restart the service: `docker compose --env-file /opt/castle/castle.env up -d notulen` in /opt/castle/repo.
 5. Health check: the container is healthy in `docker compose ps`, `https://notulen.<domain>` answers (with the basic auth login from phase 6), and the logs start clean.
 6. If the key was given, one live test recording: they open `https://notulen.<domain>`, log in, allow the microphone, record about a minute of talk ("we decided to test the meeting recorder"), stop, and wait. Transcription runs on the server's own processor, so minutes can take a few minutes; watch the logs and narrate. If nothing arrives, investigate the logs before asking them to retry.

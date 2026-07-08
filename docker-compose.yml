@@ -76,6 +76,11 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY}
       # Language the minutes are written in.
       MINUTES_LANGUAGE: ${MINUTES_LANGUAGE:-nl}
+      # Optional: publish finished minutes to a GitHub repo (empty = off).
+      NOTULEN_GITHUB_REPO: ${NOTULEN_GITHUB_REPO:-}
+      NOTULEN_GITHUB_PAT: ${NOTULEN_GITHUB_PAT:-}
+      NOTULEN_GITHUB_BRANCH: ${NOTULEN_GITHUB_BRANCH:-main}
+      NOTULEN_TARGET_DIR: ${NOTULEN_TARGET_DIR:-minutes/}
     depends_on:
       postgres:
         condition: service_healthy
