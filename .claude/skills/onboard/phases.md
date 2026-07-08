@@ -45,7 +45,7 @@ Then start phase 1 without waiting, unless they object.
    - **Yes**: use it as CASTLE_DOMAIN.
    - **No**: the castle gets free names from sslip.io, derived from the server's address, like `1-2-3-4.sslip.io` with `notulen.` and `cloud.` in front. Explain: these work immediately, nothing to buy or configure; they are just less pretty. Leave CASTLE_DOMAIN for phase 4, when the server IP exists. If they want a real domain later, it is one variable, three DNS records, and one Nextcloud setting Claude updates (`occ config:system:set trusted_domains`); recommend that once they like the castle.
 3. Fill CASTLE_REGION (from phase 2), GITHUB_REPO (owner/name from `git remote get-url origin`).
-4. Generate secrets locally, one `openssl rand -hex 24` each, for POSTGRES_PASSWORD, NEXTCLOUD_DB_PASSWORD, NEXTCLOUD_ADMIN_PASSWORD. Only fill fields that are still empty; never regenerate one that already has a value. Do not print them. (Hex, not base64: these end up inside a database URL, where base64's `/` characters break parsing.) Tell the user once: "Your passwords live in config/castle.env on this laptop and in /opt/castle/castle.env on the server. Git ignores both; they are never uploaded to GitHub."
+4. Generate secrets locally, one `openssl rand -hex 24` each, for POSTGRES_PASSWORD, NEXTCLOUD_DB_PASSWORD, NEXTCLOUD_ADMIN_PASSWORD, NEXTCLOUD_WEBHOOK_SECRET (the last one is the internal webhook secret for the cloud sync; the stack refuses to start without it, even if the sync stays unused). Only fill fields that are still empty; never regenerate one that already has a value. Do not print them. (Hex, not base64: these end up inside a database URL, where base64's `/` characters break parsing.) Tell the user once: "Your passwords live in config/castle.env on this laptop and in /opt/castle/castle.env on the server. Git ignores both; they are never uploaded to GitHub."
 
 **Verify**: read the file back; every field above is filled (CASTLE_DOMAIN may still be empty only on the sslip path).
 
@@ -128,11 +128,29 @@ Work over ssh as root for steps 1 to 4, then switch to the `castle` user forever
 3. **Question 4 of the budget**, the Anthropic key: "Notulen uses Claude to turn the transcript into the written summary, through an API key with its own billing, separate from the Claude subscription. It costs a few cents per meeting. Get one at console.anthropic.com: Billing (add a card, set a monthly limit like 5 euros), then API keys, Create key, copy the `sk-ant-...` value. Or say skip: everything else works without it, and you can add it later by just asking me."
    - Key given: put it in /opt/castle/castle.env as ANTHROPIC_API_KEY.
    - Skipped: leave the placeholder and say honestly what they will see: the recording is transcribed and saved, but the job then shows as **failed** with a missing-key error; the transcript is not lost, and adding a key later (just ask Claude) makes new recordings produce minutes.
+   - **In the same optional-keys conversation** (no extra question against the budget), offer the cloud sync: "One more optional token: anything you drop in a folder called Sync in your cloud files can also land in your GitHub repo automatically, so it is versioned and backed up. That needs one GitHub token; want it, or skip?" If yes, walk them through it: go to github.com/settings/personal-access-tokens, Generate new token (fine-grained), pick your castle repo as the only repository, under Repository permissions set Contents to Read and write, create, copy the token. If skip, skip phase 8b entirely; it can be turned on later by just asking Claude.
 4. Restart the service: `docker compose --env-file /opt/castle/castle.env up -d notulen` in /opt/castle/repo.
 5. Health check: the container is healthy in `docker compose ps`, `https://notulen.<domain>` answers (with the basic auth login from phase 6), and the logs start clean.
 6. If the key was given, one live test recording: they open `https://notulen.<domain>`, log in, allow the microphone, record about a minute of talk ("we decided to test Notulen"), stop, and wait. Transcription runs on the server itself, so the summary can take a few minutes; watch the logs and narrate. If nothing arrives, investigate the logs before asking them to retry.
 
 **Verify**: bucket exists, no `pending-phase-8` left except possibly ANTHROPIC_API_KEY, service healthy, test done or consciously skipped.
+
+## Phase 8b: cloud folder to GitHub sync (optional, fully skippable)
+
+**Already done?** SYNC_GITHUB_PAT is filled in /opt/castle/castle.env and `occ webhook_listeners:list` shows three listeners pointing at `http://nextcloud-sync:8000/nextcloud/file-event`. Then skip.
+
+**Skipped?** If they said skip to the sync token in phase 8, skip this whole phase. NEXTCLOUD_WEBHOOK_SECRET is already set (phase 3), so the container runs but stays dormant: no listeners registered, nothing fires, nothing syncs. Turning it on later is just re-running this phase.
+
+The PAT question already happened in phase 8; this phase asks nothing new.
+
+1. Make sure NEXTCLOUD_WEBHOOK_SECRET is set in both config/castle.env (laptop) and /opt/castle/castle.env (server); generate with `openssl rand -hex 24` if either is empty (older env files from before the sync existed). Put the PAT from phase 8 into /opt/castle/castle.env as SYNC_GITHUB_PAT, keep mode 600.
+2. Restart the service so it picks up the env: in /opt/castle/repo, `docker compose --env-file /opt/castle/castle.env up -d --build nextcloud-sync`; wait until `docker compose ps` shows it healthy.
+3. Register the webhook listeners: `infra/nextcloud-sync/register-webhooks.sh` (idempotent; it enables the webhook_listeners app, mints and removes a temporary admin app password, and registers the three file events via the OCS API).
+4. Have one of them create a folder named exactly `Sync` at the top of their Nextcloud files (web or mobile app). Explain in one sentence: anything in this folder also lands in your GitHub repo, so it is versioned and backed up.
+5. Verify end to end: put a test file in that user's Sync folder via occ, `printf 'castle sync test\n' | docker compose --env-file /opt/castle/castle.env exec -T -u www-data nextcloud php occ files:put - <username>/files/Sync/castle-sync-test.md`, then watch the repo from the laptop: `gh api repos/<owner>/<name>/contents/cloud-sync/<username>/castle-sync-test.md` until it appears. Deliveries ride Nextcloud's cron container, so this can take up to five minutes; say so instead of going quiet. When it lands, show them the commit (authored by their Nextcloud name) and clean up the test file.
+6. If nothing arrives after ten minutes, check `docker compose logs nextcloud-sync` and Nextcloud's webhook run logs before asking them to retry.
+
+**Verify**: three listeners registered, test file visible in the repo under `cloud-sync/<username>/`, test file cleaned up.
 
 ## Phase 9: finish
 

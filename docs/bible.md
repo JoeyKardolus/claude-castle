@@ -45,6 +45,8 @@ Nextcloud runs as a container in the compose stack (config in `infra/nextcloud/`
 - Data lives in a named volume on the VM; back it up before risky changes.
 - App store installs are kept minimal: fewer apps, fewer upgrade surprises.
 
+**Cloud folder to GitHub sync** (`infra/nextcloud-sync/`, optional): anything a user drops in the "Sync" folder of their Nextcloud files also gets committed to the GitHub repo. Nextcloud's webhook_listeners app POSTs every file write/delete/rename to the internal `nextcloud-sync` container, which reads the file off the read-only Nextcloud data volume and commits it via the GitHub Contents API, authored as that Nextcloud user. Folder mapping: `/<user>/files/Sync/...` lands at `cloud-sync/<user>/...` on `main` (override with `NC_SYNC_FOLDER` / `SYNC_TARGET_DIR`). Secret model: one shared bearer token (`NEXTCLOUD_WEBHOOK_SECRET`) baked into the webhook registration, replayed by Nextcloud on every delivery, compared in constant time by the service; commits use a fine-grained GitHub token (`SYNC_GITHUB_PAT`, Contents read/write only). Register the listeners once with `infra/nextcloud-sync/register-webhooks.sh`; deliveries ride the Nextcloud cron container, so a sync lands within a few minutes, not instantly.
+
 ## workflow/loop
 
 How work happens in this repo, every conversation:

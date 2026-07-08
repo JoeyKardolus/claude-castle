@@ -21,6 +21,7 @@ One-time VM setup: create the `castle` user (in the `docker` group), clone the r
 | postgres | castle-postgres | database for notulen + Nextcloud | internal only |
 | nextcloud | castle-nextcloud | private files/calendar/contacts | `https://cloud.<domain>` (own login + 2FA) |
 | nextcloud-cron | castle-nextcloud-cron | Nextcloud background jobs | internal only |
+| nextcloud-sync | castle-nextcloud-sync | commits Sync-folder files to GitHub | internal only |
 
 ## Where the secrets live
 
@@ -38,6 +39,10 @@ Everything secret is in **`/opt/castle/castle.env` on the VM** — never in git.
 | `S3_REGION` | optional, defaults to `fr-par` |
 | `ANTHROPIC_API_KEY` | Claude API key, used by notulen to write the minutes |
 | `MINUTES_LANGUAGE` | optional, language of the minutes, `nl` or `en`, defaults to `nl` |
+| `NEXTCLOUD_WEBHOOK_SECRET` | bearer secret between Nextcloud and the nextcloud-sync service (generate with `openssl rand -hex 24`) |
+| `GITHUB_REPO` | `owner/name` of your castle repo; nextcloud-sync commits Sync-folder files there |
+| `SYNC_GITHUB_PAT` | optional, fine-grained GitHub token (Contents read/write on that repo); empty keeps the sync dormant |
+| `NC_SYNC_FOLDER` / `SYNC_TARGET_DIR` | optional, default `Sync` and `cloud-sync/`: which Nextcloud folder syncs, and where in the repo it lands |
 
 Compose reads that file via `--env-file` (the deploy scripts pass it automatically). Running compose by hand:
 

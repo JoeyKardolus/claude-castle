@@ -146,6 +146,48 @@ services:
       postgres:
         condition: service_healthy
 
+  # ── Nextcloud sync: cloud folder to GitHub ───────────────────────────────
+  # Anything a user drops in their "Sync" folder in Nextcloud gets committed
+  # to the GitHub repo (under cloud-sync/<user>/). Nextcloud's
+  # webhook_listeners app POSTs file events here; this service reads the
+  # file off the (read-only) Nextcloud data volume and commits it via the
+  # GitHub Contents API. Internal only: no ports, not behind Caddy;
+  # Nextcloud reaches it by service name. Register the listeners once with
+  # infra/nextcloud-sync/register-webhooks.sh.
+  nextcloud-sync:
+    build:
+      context: .
+      dockerfile: infra/nextcloud-sync/Dockerfile
+    container_name: castle-nextcloud-sync
+    restart: unless-stopped
+    environment:
+      # Bearer secret the webhook listeners send; compared in constant time.
+      NEXTCLOUD_WEBHOOK_SECRET: ${NEXTCLOUD_WEBHOOK_SECRET:?set NEXTCLOUD_WEBHOOK_SECRET in /opt/castle/castle.env}
+      # Where commits land: the same owner/name repo the castle deploys from.
+      GITHUB_REPO: ${GITHUB_REPO:-}
+      # Fine-grained token with Contents read/write on that repo. Empty =
+      # the service runs but refuses to commit (sync stays dormant).
+      SYNC_GITHUB_PAT: ${SYNC_GITHUB_PAT:-}
+      # Folder name in each user's files that gets synced, and the repo
+      # directory the synced files land in.
+      NC_SYNC_FOLDER: ${NC_SYNC_FOLDER:-Sync}
+      SYNC_TARGET_DIR: ${SYNC_TARGET_DIR:-cloud-sync/}
+      # Where the Nextcloud data volume is mounted inside this container.
+      NC_DATA_ROOT: /nextcloud/data
+    volumes:
+      # Nextcloud's whole html volume, read-only; user files live under
+      # its data/ subdirectory.
+      - nextcloud_data:/nextcloud:ro
+    depends_on:
+      nextcloud:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
   # ── Nextcloud cron: background jobs ──────────────────────────────────────
   # Same image, but runs Nextcloud's cron.php every 5 minutes instead of the
   # web server. Without it, background tasks (previews, cleanup, calendar
