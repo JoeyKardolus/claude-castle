@@ -29,8 +29,11 @@ log() { printf "[2fa-enforce] %s\n" "$*"; }
 # occ is Nextcloud's admin command-line tool; it lives inside the container
 # and must run as the web-server user (www-data).
 occ() {
+    # </dev/null matters: exec -T reads stdin, and inside the per-user while
+    # loops that would swallow the remaining user list, silently checking
+    # only the first user (a lockout risk when enforcing).
     docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" \
-        exec -T -u www-data nextcloud php occ "$@"
+        exec -T -u www-data nextcloud php occ "$@" </dev/null
 }
 
 # Print user ids, one per line; non-zero (fail closed) if the list can't be
