@@ -10,9 +10,12 @@ recreate killed any in-flight transcription.
 in IndexedDB, so a re-opened tab can resume the upload. The stale-cleanup
 loop (``core/sessions/stale_cleanup.py``) retires those after 6 h.
 
-FAILURE POLICY: the K8s liveness probe fails OPEN (an unreachable cluster
-returns "all candidates live", so a flaky kubeconfig never mass-fails rows
-that might be progressing); the DB write itself propagates (Tier-1).
+FAILURE POLICY: with a cluster configured, the K8s liveness probe fails
+OPEN (an unreachable cluster returns "all candidates live", so a flaky
+kubeconfig never mass-fails rows that might be progressing). With no
+cluster configured (KUBECONFIG_DATA unset, the CPU-only default) there is
+nothing external to check: every interrupted job is an orphan and is
+marked failed. The DB write itself propagates (Tier-1).
 """
 from __future__ import annotations
 
@@ -71,7 +74,11 @@ def _live_k8s_job_ids(candidate_ids: list[str]) -> set[str]:
     rows that might actually be progressing.
     """
     if not os.environ.get("KUBECONFIG_DATA"):
-        return set(candidate_ids)
+        # No cluster configured means transcription runs in THIS process
+        # (the CPU path), so nothing can survive a restart: every candidate
+        # is an orphan. Returning "all live" here (the old behavior) left
+        # CPU jobs stuck in 'transcribing' forever after a deploy.
+        return set()
     try:
         # Lazy: the dashboard boots without the kubernetes package. The
         # cluster() handle is the jobs package's one public door
