@@ -13,7 +13,7 @@ RUN apt-get update -qq && apt-get install -y -qq git ffmpeg \
 # fallback (the default working path when no GPU cluster is configured);
 # kubernetes is only exercised when KUBECONFIG_DATA is set (optional GPU tier).
 # Versions are pinned by constraints.txt (regenerate with:
-#   uv export --no-hashes --all-extras --no-emit-project --no-dev \
+#   uv export --no-hashes --all-extras --no-emit-workspace --no-dev \
 #     -o infra/docker/notulen/constraints.txt
 # ) so image builds stay reproducible.
 COPY infra/docker/notulen/constraints.txt /tmp/constraints.txt
