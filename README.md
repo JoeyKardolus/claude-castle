@@ -10,13 +10,15 @@ You type the commands below once. After that, Claude Code does everything else, 
 
 ## 1. Get a terminal
 
-**Windows**: open PowerShell as administrator, run this, then restart your computer and open the new "Ubuntu" app:
+**Windows**: press the Windows key, type `powershell`, right-click the "Windows PowerShell" result and choose **Run as administrator**, click Yes. Paste this line and press Enter:
 
 ```
 wsl --install
 ```
 
-**Mac**: open the built-in Terminal app. Done.
+Restart the computer. Then press the Windows key, type `ubuntu`, and open the "Ubuntu" app: that black window is your terminal from now on. The first time it asks you to choose a username and password; pick anything and remember the password, your computer will ask for it now and then.
+
+**Mac**: press Cmd+Space, type `terminal`, press Enter. That window is your terminal. Done.
 
 ## 2. Download your castle and the two tools
 
