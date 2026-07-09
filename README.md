@@ -80,6 +80,8 @@ set up my castle
 
 Claude does the rest: connects you to GitHub, walks you through Scaleway (the company you rent the server from), creates the server, and sets up the website, the cloud, and Notulen. It only interrupts you for three things: the Scaleway key, the question whether you own a web address, and scanning two QR codes with your phone for the secure login.
 
+**How this control room works.** Your "set up my castle" task appears as a line in a list, working away. Use the **arrow keys** to move onto it and press **Enter** to open it: now you see everything it says and asks. Type to answer, press Enter to send. **Esc** brings you back to the list. Keep the setup session open while it runs; when Claude needs you, its question is waiting right there.
+
 ## The Scaleway part, so you recognize it
 
 Scaleway is the European company renting you the server. When Claude reaches that step it guides you through exactly this:
