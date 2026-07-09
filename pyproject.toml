@@ -10,6 +10,7 @@ dependencies = [
     "dashkit",
     "castle-gpu-jobs",
     "nextcloud-sync",
+    "documents",
     "boto3>=1.34",
     "python-multipart>=0.0.9",
 ]
@@ -21,16 +22,18 @@ dependencies = [
 whisper = ["faster-whisper>=1.0"]
 
 [dependency-groups]
-dev = ["pytest>=8"]
+# pypdf is test-only: the apps/documents PDF test extracts text to verify renders.
+dev = ["pytest>=8", "pypdf>=5"]
 
 [tool.uv]
 # Root is a virtual workspace anchor, not an installable package.
 package = false
 
 [tool.uv.workspace]
-members = ["lib/dashkit", "infra/gpu-jobs", "infra/nextcloud-sync"]
+members = ["lib/dashkit", "infra/gpu-jobs", "infra/nextcloud-sync", "apps/documents"]
 
 [tool.uv.sources]
 dashkit = { workspace = true }
 castle-gpu-jobs = { workspace = true }
 nextcloud-sync = { workspace = true }
+documents = { workspace = true }

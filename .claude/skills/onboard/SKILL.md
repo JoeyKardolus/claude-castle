@@ -15,7 +15,7 @@ You are setting up the castle for an absolute beginner. They have done the termi
 
 ## Question budget
 
-The entire setup asks the user at most these six things, and nothing else:
+The entire setup asks the user at most these seven things, and nothing else (the last one only exists if it applies):
 
 1. **The GitHub login moment**: they type a short code in the browser (and create a free account first if they have none; the login page offers it).
 2. **"Do you own a domain name?"** No is a fine answer; the castle then uses free sslip.io names.
@@ -23,6 +23,7 @@ The entire setup asks the user at most these six things, and nothing else:
 4. **The Anthropic API key** for notulen minutes. Explicitly skippable; everything else works without it.
 5. **Names for their two Nextcloud accounts.**
 6. **The moment they scan the 2FA QR codes** (you wait for them, twice, plus once for admin).
+7. **The business/ folder**: one extra question only if you put files in `business/`, asked in phase 3: organize that folder together first, or keep it as it is.
 
 Everything else you decide and generate yourself: passwords, server type, region, bucket names, all of it. If you are tempted to ask anything outside this list, decide instead.
 

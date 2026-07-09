@@ -4,3 +4,5 @@
 FROM nginx:alpine
 
 COPY apps/website/ /usr/share/nginx/html/
+# The shared design system: the page links /design/index.css.
+COPY design/ /usr/share/nginx/html/design/

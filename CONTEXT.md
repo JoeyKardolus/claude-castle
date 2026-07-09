@@ -52,6 +52,28 @@ _Avoid_: the frontend, the homepage (when you mean the whole app)
 A small status page built with dashkit (`lib/dashkit/`) that shows how a part of the stack is doing.
 _Avoid_: admin panel, console
 
+## Documents
+
+**Design system**:
+The one shared look for everything the castle produces (website, documents): colors, fonts, spacing, defined once under `design/`.
+_Avoid_: branding, theme, style guide, house style (in code; fine in user-facing prose)
+
+**Tokens**:
+The named CSS custom properties in `design/tokens.css` (like `--color-primary`) that carry the design system. Templates style only through `var(--...)`; nothing hard-codes a color or font.
+_Avoid_: CSS variables, theme values, style constants
+
+**Company profile**:
+The facts about the owner's company in `design/company.yaml`: name, address, registration and VAT numbers, IBAN, logo, colors. Documents pull from it; official numbers in it are never guessed, only copied from the owner's own papers or answers.
+_Avoid_: company info, business details, company config
+
+**Document template**:
+The layout for one document type (invoice, quote, letter) under `apps/documents/`, combining the company profile, the tokens, and a data yaml into a PDF via `python -m documents`.
+_Avoid_: form, layout file, invoice generator
+
+**Transactional email**:
+One-off mail the castle sends on the owner's behalf (an invoice to a client) through Scaleway's email API via `infra/email/send_document.py`. Needs a verified real domain; never sent without the owner approving the exact document.
+_Avoid_: SMTP, mailer, newsletter, bulk mail
+
 ## Workflow
 
 **Skill**:

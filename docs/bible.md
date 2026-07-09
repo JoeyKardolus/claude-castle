@@ -27,6 +27,15 @@ The meeting-notes app, in `apps/notulen/`. You upload a meeting recording; a bac
 
 The public website, in `apps/website/`. Served at the root of `CASTLE_DOMAIN` via Caddy. Static-first and boring on purpose: it should never be the reason the VM is busy. It is one container in the compose stack and redeploys automatically when `main` changes.
 
+## apps/documents
+
+Business documents (invoices first, then quotes, letters, anything with the company's name on it) in the owner's house style, in `apps/documents/`.
+
+- **In**: a document template (one directory per type), the design tokens (`design/tokens.css`, templates style only through `var(--...)`), the company profile (`design/company.yaml`), and a small data yaml with the content.
+- **Out**: a PDF, via `uv run python -m documents <type> --data <file>.yaml --out <file>.pdf` (`--sample` renders with sample data).
+- **Company profile intake**: the `business/` folder is where an existing company drops what it already has (old invoices, logo, registration extract); onboarding fills `design/company.yaml` and the brand colors from it, using only values literally found there. Official numbers are never guessed.
+- **Sending is approval-then-send**: the owner sees the exact PDF and says yes before anything is emailed, every time. Mail goes out as transactional email through the Scaleway email API (`infra/email/send_document.py`); that needs the owner's real domain verified for sending, and free sslip.io names cannot send. The `make-document` skill (`.claude/skills/make-document/`) carries the whole flow.
+
 ## infra/platform
 
 The VM and everything that keeps it serving, in `infra/`:

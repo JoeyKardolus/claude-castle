@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "documents"
+version = "0.1.0"
+description = "Branded PDF documents (invoice, quote, letter) from YAML data + jinja2 templates, styled by design/."
+requires-python = ">=3.12"
+dependencies = [
+    "jinja2>=3.1",
+    "weasyprint>=61",
+    "pyyaml>=6",
+]
+
+[tool.setuptools]
+# Single top-level package: this directory itself (same pattern as
+# lib/dashkit and infra/nextcloud-sync).
+packages = ["documents"]
+package-dir = {"documents" = "."}
+include-package-data = true
+
+[tool.setuptools.package-data]
+# Ship the document templates alongside the Python code.
+documents = [
+    "templates/*",
+    "templates/**/*",
+]

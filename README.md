@@ -1,10 +1,11 @@
 # Claude Castle
 
-Four things, all yours, all managed by Claude:
+Five things, all yours, all managed by Claude:
 
 - **Notulen**: press record during any meeting, on your laptop or phone; a tidy written summary appears afterwards. Think supplier meetings, client calls, board meetings, family decisions.
 - **Your own cloud**: your files and photos on your own server instead of Dropbox or Google, with a phone app, protected by a code from your phone.
 - **Your own website** at your own address, changed by asking in normal sentences: "add a page with our opening hours".
+- **Documents in your own house style**: invoices first, then quotes and letters. Ask for one in normal words, check the PDF, and Claude emails it for you, but only after you approve it.
 - **Claude with hands**: the same Claude you chat with, but this one can actually do computer work. It looks after everything above, and it builds whatever you think of next: a booking form, a price calculator, an automation that files your paperwork, a tool nobody sells. If a computer can do it, you can ask for it.
 
 Why a server? These things need a computer that is always on. You rent a small one, about the price of two coffees a month, and Claude sets it up and looks after it. You never touch it.
@@ -92,6 +93,7 @@ Ask for two things early on: "set up backups", and once a month, "update the ser
 - Server: 10 to 15 euro per month.
 - Web address (optional): about 10 euro per year.
 - Notulen summaries: cents per meeting, through an API key.
+- Emailing documents: free tier at first, then cents per email.
 
 **About that API key**: your Claude subscription covers everything Claude does for you here; nothing extra to set up. The API key is one separate, optional thing: your server turns meeting audio into a raw transcript itself, and the key is used once per meeting to turn that transcript into the tidy Notulen summary. It has its own account and pay-per-use billing. Claude offers it during setup and skipping is fine. To get it:
 
