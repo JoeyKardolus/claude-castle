@@ -52,7 +52,15 @@ Paste:
 claude agents --dangerously-skip-permissions
 ```
 
-The first time, your browser opens: log in with your Claude account. The scary-looking words in the command mean Claude may work without asking permission for every small step; that is what makes this hands-free. Only start Claude this way inside this folder.
+The first time, your browser opens: log in with your Claude account. The scary-looking words in the command mean Claude may work without asking permission for every small step; that is what makes this hands-free. Only start Claude this way inside this folder. Read the safety section below before your first run; it is short and it matters.
+
+## Powerful, so handle with care
+
+Claude here is not the chat website. It really does things: it creates real servers that cost real money, changes real files, and deletes what you tell it to delete. If you tell it to remove a folder, it will. That power is the whole point, and it deserves two habits and one setting:
+
+- **Windows keeps you a step safer by design.** Claude warns on first start that it should run inside a container or virtual machine: you already are. Ubuntu-in-Windows is its own separate Linux world; the castle lives there. Your Windows files are reachable from it through one special folder, so they are not walled off, but Claude has no reason to touch them and you can tell it never to. On a Mac there is no such separation: Claude runs on your real machine, so the folder rule above is your seatbelt; keep castle work in the castle folder.
+- **Say what you mean.** Claude asks before big or destructive things, but a clear instruction is a clear instruction. "Delete everything" deletes everything. When something feels risky, say "explain what you would do first".
+- **Turn off data sharing.** On claude.ai: Settings, then Privacy, and switch off the option that lets your conversations be used to improve the models. Your words are then only processed to answer you, which is what you want when your company's paperwork lives in this folder.
 
 ## 4. Say what you want
 
