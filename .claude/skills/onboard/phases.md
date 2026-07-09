@@ -28,7 +28,7 @@ Then start phase 1 without waiting, unless they object.
 **Already done?** `gh auth status` succeeds, `~/.claude/projects/.../memory` is a symlink into this repo, and the origin owner equals `gh api user --jq .login`. Then skip.
 
 1. Verify `git --version`, `uv --version`, `claude --version` all print. These were installed by hand before this conversation; if one is missing, install it (git via apt/xcode-select, uv via the astral.sh install script) and say what you did.
-2. Install the GitHub CLI if missing. Ubuntu/WSL: the official apt repo (keyring plus `apt install gh`). Mac: `brew install gh`. Warn first: "your computer will ask for your password now; that is the normal way it approves installing software".
+2. Install the GitHub CLI if missing, WITHOUT sudo (this session has no terminal for a password prompt, and the user must never have to run commands themselves). Download the latest release binary into `~/.local/bin`: resolve the version from `https://api.github.com/repos/cli/cli/releases/latest` (the `tag_name`, like v2.x.y), then fetch `https://github.com/cli/cli/releases/download/<tag>/gh_<version>_linux_amd64.tar.gz` (Mac: `_macOS_arm64.zip` or `_amd64` per `uname -m`), extract the single `gh` binary to `~/.local/bin/gh`, `chmod +x`, and make sure `~/.local/bin` is on PATH (it is on fresh WSL and via the uv installer). Verify `gh --version`.
 3. Log in (**question 1 of the budget**): first ask "do you already have a GitHub account?"; if not, send them to github.com/signup (free, two minutes) and wait. Then `gh auth login --hostname github.com --git-protocol https --web` followed by `gh auth setup-git`. Tell the user: a code appears, the browser opens, they type the code and click approve. That is all they do. HTTPS plus `setup-git` means no ssh keys to manage on the GitHub side.
 4. If `git config user.name` or `user.email` is empty, set them from the GitHub account, using `gh api user` for the name and the noreply email if none is public.
 5. Give them their own private copy. They cloned the public upstream, so check `git remote get-url origin`: if the owner is not their login, run `gh repo create claude-castle --private` under their account, rename the current origin to `upstream`, add their new repo as `origin`, and `git push -u origin main`. Say in one sentence: your castle now has its own private home on GitHub; the original stays connected as upstream for future improvements.
@@ -40,7 +40,7 @@ Then start phase 1 without waiting, unless they object.
 
 **Already done?** `scw account project list` returns a project table. Then skip.
 
-1. Install scw if missing: `curl -sL https://raw.githubusercontent.com/scaleway/scaleway-cli/master/scripts/get.sh | sh`
+1. Install scw if missing, WITHOUT sudo (the official install script wants root; skip it). Download the release binary straight into the user's own folder: resolve the latest version from `https://api.github.com/repos/scaleway/scaleway-cli/releases/latest`, fetch the matching `scaleway-cli_<version>_linux_amd64` (or darwin/arm64 per OS and `uname -m`) from that release's assets, save as `~/.local/bin/scw`, `chmod +x`, verify `scw version`.
 2. **Question 3 of the budget**, ask for the API key with this exact path: "Go to https://console.scaleway.com, log in, click IAM in the left menu (or your name, then API keys), then API keys, then Generate API key. It shows an Access key and a Secret key. Copy both and paste them here. The secret is shown only once, so copy it before closing." If they have no Scaleway account yet, send them to https://www.scaleway.com (say: check the address bar, that exact address) to sign up and add a payment card first (Billing section), then come back for the key.
 3. Spending alert, part of the same conversation, not a new question: send them to https://console.scaleway.com/billing/alerts and have them set a monthly budget alert of 30 euro (any number they like; 30 covers the whole castle with room). One sentence why: a warning email arrives long before any surprise. If the page looks different, it lives under Billing, then Budget alerts. Do not proceed to phase 3 until they say it is set or they explicitly skip.
 4. Configure non-interactively, never through `scw init`:
@@ -85,7 +85,7 @@ Then start phase 1 without waiting, unless they object.
 
 ## Phase 5: DNS
 
-**Already done?** `dig +short <domain>`, `dig +short notulen.<domain>`, `dig +short cloud.<domain>` all return SERVER_IP. Then skip. (`dig` is not preinstalled on fresh WSL Ubuntu; install it with `sudo apt-get install -y dnsutils` if missing.)
+**Already done?** All three names resolve to SERVER_IP. Check without installing anything: `python3 -c "import socket; print(socket.gethostbyname('<name>'))"` for `<domain>`, `notulen.<domain>` and `cloud.<domain>` (python3 is always present; no dig, no sudo).
 
 - **Real domain**: print exactly this table with their real domain and IP, and explain in one sentence that an A record points a name at a server address, added at the website where they bought the domain (look for "DNS", "DNS records", or "Zone"):
 
@@ -95,8 +95,8 @@ Then start phase 1 without waiting, unless they object.
   | A | `notulen` | SERVER_IP |
   | A | `cloud` | SERVER_IP |
 
-  TTL defaults are fine. Then poll the three `dig +short` checks every 30 seconds or so. If it drags on, explain DNS spread can take minutes to hours, and offer to continue waiting; do not proceed to phase 6 until all three resolve.
-- **sslip**: nothing to do; the names `<ip-dashes>.sslip.io`, `notulen.<ip-dashes>.sslip.io` and `cloud.<ip-dashes>.sslip.io` resolve by construction. Run the three `dig` checks once to prove it.
+  TTL defaults are fine. Then poll the three python3 resolution checks (the Already-done line above) every 30 seconds or so. If it drags on, explain DNS spread can take minutes to hours, and offer to continue waiting; do not proceed to phase 6 until all three resolve.
+- **sslip**: nothing to do; the names `<ip-dashes>.sslip.io`, `notulen.<ip-dashes>.sslip.io` and `cloud.<ip-dashes>.sslip.io` resolve by construction. Run the three resolution checks once to prove it.
 
 **Verify**: all three names resolve to SERVER_IP.
 
