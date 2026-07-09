@@ -86,7 +86,7 @@ Claude does the rest: connects you to GitHub, walks you through Scaleway (the co
 
 Scaleway is the European company renting you the server. When Claude reaches that step it guides you through exactly this:
 
-1. Create an account at https://www.scaleway.com (that exact address) and verify your email.
+1. Create an account at https://www.scaleway.com (that exact address). Pick **Continue with GitHub** and use the GitHub account from earlier: no new password, one account fewer to manage.
 2. Add your bank card in the console at https://console.scaleway.com under Billing. The server costs 10 to 15 euro per month; you can delete it any time.
 3. Claude then asks for an API key: a long code that lets Claude manage the server for you. In the console menu: IAM, then API keys, then Generate API key. Copy the two codes it shows and paste them to Claude.
 4. Claude will also point you at Billing, Budget alerts, to set a monthly spending alert (30 euro is a good number). Then a surprise bill is impossible: you get a warning email long before anything unusual.
