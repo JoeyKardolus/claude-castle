@@ -105,7 +105,7 @@ Knowing these five things makes Claude make sense:
 - **It is yours to shape.** Tell Claude "answer shorter" or "explain more" and it adjusts itself for good.
 - **If something seems broken, say exactly that.** Claude collects the evidence, explains the cause in plain words, and proposes the fix before touching anything.
 
-Ask for two things early on: "set up backups", and once a month, "update the server and everything on it".
+Ask for two things early on: "set up backups", and once a month, "update": your castle then takes the newest improvements from the project it came from, without touching what is yours.
 
 ## Costs
 
