@@ -22,8 +22,8 @@ The default image transcribes everything but does not label who said what. To ad
 HF_TOKEN=<your token> infra/gpu/build-worker.sh v2
 ```
 
-and bump `NOTULEN_WORKER_IMAGE` to the new tag in `/opt/castle/castle.env`, then `docker compose --env-file /opt/castle/castle.env up -d notulen`.
+and bump `NOTULEN_WORKER_IMAGE` to the new tag in the vault (push a new `castle-env` version and pull on the VM, see `infra/secrets/README.md`), then `docker compose --env-file /opt/castle/castle.env up -d notulen`.
 
 ## Tearing it down
 
-Asking Claude to remove the GPU tier does this: delete the cluster (`scw k8s cluster delete <cluster-id> region=<region> with-additional-resources=true`), delete the registry namespace (`scw registry namespace delete <namespace-id>`) if you want the image gone too, and remove `KUBECONFIG_DATA` from `/opt/castle/castle.env` before restarting notulen. The dashboard then quietly goes back to CPU transcription.
+Asking Claude to remove the GPU tier does this: delete the cluster (`scw k8s cluster delete <cluster-id> region=<region> with-additional-resources=true`), delete the registry namespace (`scw registry namespace delete <namespace-id>`) if you want the image gone too, and empty `KUBECONFIG_DATA` in the vault (new `castle-env` version, then pull on the VM) before restarting notulen. The dashboard then quietly goes back to CPU transcription.

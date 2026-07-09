@@ -40,8 +40,9 @@ Business documents (invoices first, then quotes, letters, anything with the comp
 
 The VM and everything that keeps it serving, in `infra/`:
 
-- **`infra/caddy/`**: the Caddyfile. One place maps subdomains to containers. The domain is not hard-coded; it comes from `CASTLE_DOMAIN` in the env file (`config/castle.env.example` is the template).
-- **`infra/auto-deploy/`**: the pull loop. A systemd timer runs a script that fetches `origin/main`, and if there are new commits, pulls and restarts the compose stack. Pushing to `main` IS the deploy; there is no separate release step.
+- **`infra/caddy/`**: the Caddyfile. One place maps subdomains to containers. The domain is not hard-coded; it comes from `CASTLE_DOMAIN` in the environment (`config/castle.env.example` documents every field).
+- **`infra/secrets/`**: the vault. Secrets live in one Scaleway Secret Manager secret named `castle-env` holding the stack's full KEY=value environment; every change is a new version. `push-env.sh` (laptop) pushes a version; `pull-env.sh` (VM) fetches the latest with the scoped read-only key in `/opt/castle/scw-secrets.env` and atomically rewrites the cache at `/opt/castle/castle.env`, which compose reads via `--env-file`. The auto-deploy loop pulls every cycle and redeploys when the content changed, so rotation is push-a-version-and-wait, no ssh. On any fetch failure the pull keeps the existing cache and the stack keeps running. `config/castle.env` on the laptop keeps only non-secret settings (domain, region, repo, server IP, TEM sending settings).
+- **`infra/auto-deploy/`**: the pull loop. A systemd timer runs a script that fetches `origin/main`, and if there are new commits or a new vault version, pulls and restarts the compose stack. Pushing to `main` IS the deploy; there is no separate release step.
 - **`infra/systemd/`**: unit files for the timer and anything else that must survive a reboot.
 - **`infra/docker/`**: shared container build bits.
 - The `onboard` skill (`.claude/skills/onboard/`) prepares a fresh VM once, driven by Claude: server creation, Docker, the env file, first start of the stack, the timer.

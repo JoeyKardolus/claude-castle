@@ -38,7 +38,7 @@ Work through the phases in [phases.md](phases.md), in order. Each phase is idemp
 | 0 | Explain the plan | user has seen the 4-line overview |
 | 1 | Laptop tools + GitHub | `gh auth status` ok, memory linked, origin is theirs |
 | 2 | Scaleway CLI | `scw account project list` returns their project |
-| 3 | config/castle.env | file exists, domain/region/repo/secrets filled |
+| 3 | Settings file + the vault | config/castle.env holds the settings, vault secret `castle-env` has a version |
 | 4 | Create the server | instance `castle` running, SERVER_IP saved |
 | 5 | DNS | all three names resolve to SERVER_IP |
 | 6 | Deploy the stack | three URLs respond over HTTPS |
@@ -50,7 +50,7 @@ Work through the phases in [phases.md](phases.md), in order. Each phase is idemp
 ## Safety rules
 
 - Never print a generated password except the one time the user must store it (the notulen login, the Nextcloud temp passwords). Never repeat it later; point at where it lives instead.
-- Never commit `config/castle.env` or `/opt/castle/castle.env`. Git ignores the local one; keep it that way.
+- Secrets live in the vault (the Scaleway Secret Manager secret `castle-env`; see `infra/secrets/README.md`). `config/castle.env` holds settings only, never a secret; `/opt/castle/castle.env` is the VM's pulled cache. Never write secrets into either file by hand, never print vault content, and never commit either file (git ignores the local one; keep it that way).
 - If a phase fails twice in a row on the same error, stop. Explain in plain words what failed, what you tried, and what you would try next. Do not thrash.
 - From the end of phase 6 onward, all ssh goes through the `castle` user, never root.
 - Money: the server costs roughly 10 to 15 euros per month from the moment it exists. Say this once, in phase 0, and again right before creating it. The GPU tier (phase 9) bills only while it is processing a recording, roughly 80 cents per hour of work, cents per meeting; say that right before creating the cluster.

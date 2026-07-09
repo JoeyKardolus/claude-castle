@@ -45,7 +45,7 @@ Only when they have approved the exact file, offer to email it. Never send a ver
 
 1. If the castle runs on a free sslip.io name: say honestly that sending needs a real domain they own, sslip names cannot send, and stop here. The PDF is still theirs to send by hand.
 2. Real domain: `scw tem domain create` with their domain, print the DNS records Scaleway asks for (add them where the domain was bought), and wait for verification. This can take a while; offer to check back.
-3. Once verified, set `TEM_PROJECT_ID`, `TEM_REGION`, and `TEM_FROM` (like `noreply@<their domain>`) in `config/castle.env`.
+3. Once verified, set `TEM_PROJECT_ID`, `TEM_REGION`, and `TEM_FROM` (like `noreply@<their domain>`) in `config/castle.env`. These are settings, not secrets, so the laptop file is their home; the sending credential is the Scaleway secret key, which `send_document.py` reads from the scw CLI config, never from castle.env. Nothing on the VM uses TEM values, so no vault push is needed.
 
 **Every time**: confirm the recipient address and the exact file out loud, get the yes, then send:
 

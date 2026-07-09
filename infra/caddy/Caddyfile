@@ -6,7 +6,8 @@
 # your DNS records (A/AAAA for the domain and both subdomains) at this VM.
 #
 # {$CASTLE_DOMAIN} is replaced at startup from the CASTLE_DOMAIN environment
-# variable (set in /opt/castle/castle.env, passed in via docker-compose.yml).
+# variable (from the castle-env vault secret, pulled to /opt/castle/castle.env
+# and passed in via docker-compose.yml).
 # Example: CASTLE_DOMAIN=castle.example.com
 
 # ── Main website ─────────────────────────────────────────────────────────────
@@ -28,7 +29,8 @@
 #
 # The password is stored as a bcrypt HASH, never in plain text. Generate one:
 #   docker compose exec caddy caddy hash-password
-# and put the result in /opt/castle/castle.env as NOTULEN_BASIC_AUTH_HASH.
+# and put the result in the castle-env vault secret as NOTULEN_BASIC_AUTH_HASH
+# (push a new version + pull on the VM; see infra/secrets/README.md).
 #
 # (Bigger setups replace this with single sign-on, e.g. oauth2-proxy in front
 # of an identity provider. Out of scope here: basic_auth is plenty for a

@@ -9,7 +9,7 @@ There is no deploy button and no CI service. **Pushing to `main` on GitHub IS th
 3. It fetches `origin/main`; if nothing changed, it exits. If something changed, it fast-forwards the clone at `/opt/castle/repo`, rebuilds the images, restarts the containers, and rolls back any service whose healthcheck fails.
 4. If `infra/caddy/Caddyfile` changed, Caddy validates the new config and reloads it (an invalid config is skipped — the live sites stay up).
 
-One-time VM setup: create the `castle` user (in the `docker` group), clone the repo to `/opt/castle/repo`, write `/opt/castle/castle.env`, then run `sudo /opt/castle/repo/infra/systemd/install.sh`.
+One-time VM setup: create the `castle` user (in the `docker` group), clone the repo to `/opt/castle/repo`, write `/opt/castle/scw-secrets.env` (the scoped vault key, see `infra/secrets/README.md`), run `/opt/castle/repo/infra/secrets/pull-env.sh` to materialize `/opt/castle/castle.env`, then run `sudo /opt/castle/repo/infra/systemd/install.sh`.
 
 ## Service map
 
@@ -25,7 +25,11 @@ One-time VM setup: create the `castle` user (in the `docker` group), clone the r
 
 ## Where the secrets live
 
-Everything secret is in **`/opt/castle/castle.env` on the VM** — never in git. Every variable it must define:
+Everything secret is in **the vault**: one Scaleway Secret Manager secret named `castle-env` whose latest version holds the stack's full KEY=value environment. Never in git, never hand-edited on a disk. Changing or rotating anything means pushing a new version with `infra/secrets/push-env.sh`; see `infra/secrets/README.md`.
+
+The VM keeps a pulled cache at **`/opt/castle/castle.env`** (mode 600): `infra/secrets/pull-env.sh` fetches the latest vault version with the scoped read-only key in `/opt/castle/scw-secrets.env` and rewrites the cache atomically. The auto-deploy loop runs that pull every cycle and redeploys when the content changed, so a new vault version is live within minutes, no ssh. If the vault is unreachable, the pull keeps the existing cache and the stack keeps running.
+
+Every variable the environment must define:
 
 | Variable | What it is |
 |---|---|
@@ -44,7 +48,7 @@ Everything secret is in **`/opt/castle/castle.env` on the VM** — never in git.
 | `SYNC_GITHUB_PAT` | optional, fine-grained GitHub token (Contents read/write on that repo); empty keeps the sync dormant |
 | `NC_SYNC_FOLDER` / `SYNC_TARGET_DIR` | optional, default `Sync` and `cloud-sync/`: which Nextcloud folder syncs, and where in the repo it lands |
 
-Compose reads that file via `--env-file` (the deploy scripts pass it automatically). Running compose by hand:
+Compose reads the cache via `--env-file` (the deploy scripts pass it automatically). Running compose by hand:
 
 ```
 docker compose --env-file /opt/castle/castle.env up -d

@@ -23,8 +23,12 @@ The set of containers defined in the root `docker-compose.yml`: website, notulen
 _Avoid_: the cluster, the services (unqualified)
 
 **Auto-deploy**:
-The pull loop on the VM (`infra/auto-deploy/`) that checks GitHub for new commits on `main` and restarts the compose stack. Pushing to `main` is the deploy.
+The pull loop on the VM (`infra/auto-deploy/`) that checks GitHub for new commits on `main` and the vault for a new env version, and restarts the compose stack. Pushing to `main` is the deploy.
 _Avoid_: CI/CD, the pipeline, release process
+
+**Vault**:
+The one Scaleway Secret Manager secret named `castle-env` that holds the stack's full KEY=value environment; every change is a new version (`infra/secrets/`). The VM pulls the latest version into its cache at `/opt/castle/castle.env` with a scoped read-only key; `config/castle.env` on the laptop keeps settings only, never secrets.
+_Avoid_: Secret Manager (unqualified), secret store, keyvault, the env file (when you mean the source of truth)
 
 **Nextcloud**:
 The self-hosted file and calendar app in the compose stack; where uploads and shared files live.

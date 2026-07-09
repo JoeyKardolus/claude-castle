@@ -10,7 +10,7 @@
 #
 # Usage (admin kubeconfig from scw must be active):
 #   KUBECONFIG=<admin-kubeconfig> infra/gpu/make-dashboard-kubeconfig.sh > dashboard-kubeconfig.yaml
-#   base64 -w0 dashboard-kubeconfig.yaml   -> KUBECONFIG_DATA in /opt/castle/castle.env
+#   base64 -w0 dashboard-kubeconfig.yaml   -> KUBECONFIG_DATA in the castle-env vault secret (infra/secrets/README.md)
 #
 # Idempotent: safe to run again; it reuses everything that already exists.
 set -euo pipefail

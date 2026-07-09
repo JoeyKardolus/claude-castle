@@ -4,11 +4,13 @@
 #
 #   docker compose --env-file /opt/castle/castle.env up -d
 #
-# Secrets and settings live in /opt/castle/castle.env on the VM — NEVER in
-# git. The ${VAR} references below are filled in from that file at start
-# time (that's what --env-file does). Variables written as ${VAR:?...} are
-# required and compose refuses to start without them; ${VAR:-default} has a
-# safe default. The full list of required variables is in infra/README.md.
+# Secrets and settings live in the vault (the Scaleway Secret Manager secret
+# named castle-env; see infra/secrets/README.md), NEVER in git. The VM pulls
+# the latest vault version into the cache at /opt/castle/castle.env, and the
+# ${VAR} references below are filled in from that file at start time (that's
+# what --env-file does). Variables written as ${VAR:?...} are required and
+# compose refuses to start without them; ${VAR:-default} has a safe default.
+# The full list of required variables is in infra/README.md.
 
 name: castle
 
@@ -26,7 +28,7 @@ services:
       - "443:443"   # HTTPS
       - "443:443/udp"  # HTTP/3
     environment:
-      CASTLE_DOMAIN: ${CASTLE_DOMAIN:?set CASTLE_DOMAIN in /opt/castle/castle.env}
+      CASTLE_DOMAIN: ${CASTLE_DOMAIN:?set CASTLE_DOMAIN in the castle-env vault secret}
       NOTULEN_BASIC_AUTH_USER: ${NOTULEN_BASIC_AUTH_USER:?set NOTULEN_BASIC_AUTH_USER}
       NOTULEN_BASIC_AUTH_HASH: ${NOTULEN_BASIC_AUTH_HASH:?set NOTULEN_BASIC_AUTH_HASH}
     volumes:
@@ -82,7 +84,7 @@ services:
       NOTULEN_GITHUB_BRANCH: ${NOTULEN_GITHUB_BRANCH:-main}
       NOTULEN_TARGET_DIR: ${NOTULEN_TARGET_DIR:-minutes/}
       # Optional GPU tier (all empty = CPU transcription, the default path).
-      # Onboard's GPU phase fills these in castle.env; see config/castle.env.example.
+      # Onboard's GPU phase fills these in the vault; see config/castle.env.example.
       KUBECONFIG_DATA: ${KUBECONFIG_DATA:-}          # base64 kubeconfig of the castle cluster
       CASTLE_K8S_NAMESPACE: ${CASTLE_K8S_NAMESPACE:-}
       NOTULEN_WORKER_IMAGE: ${NOTULEN_WORKER_IMAGE:-}
@@ -179,7 +181,7 @@ services:
     restart: unless-stopped
     environment:
       # Bearer secret the webhook listeners send; compared in constant time.
-      NEXTCLOUD_WEBHOOK_SECRET: ${NEXTCLOUD_WEBHOOK_SECRET:?set NEXTCLOUD_WEBHOOK_SECRET in /opt/castle/castle.env}
+      NEXTCLOUD_WEBHOOK_SECRET: ${NEXTCLOUD_WEBHOOK_SECRET:?set NEXTCLOUD_WEBHOOK_SECRET in the castle-env vault secret}
       # Where commits land: the same owner/name repo the castle deploys from.
       GITHUB_REPO: ${GITHUB_REPO:-}
       # Fine-grained token with Contents read/write on that repo. Empty =

@@ -2,6 +2,19 @@
 
 Each phase: **Already done?** check first, then the work, then the **Verify** check. Announce each phase to the user in one plain sentence before starting it.
 
+## The vault, and how to update it
+
+Secrets never live in files the user keeps. They live in the vault: one Scaleway Secret Manager secret named `castle-env` whose content is the stack's full KEY=value environment; every change is a new version (`infra/secrets/README.md` explains the model). `config/castle.env` on the laptop holds only non-secret settings. The VM keeps a pulled cache at `/opt/castle/castle.env`; compose reads that cache.
+
+Every phase that changes any environment value uses this one pattern:
+
+1. Fetch the current content to a temp file, mode 600, never echoed: look up the secret id with `scw secret secret list name=castle-env -o json` (the `id` field), then `scw secret version access <secret-id> revision=latest raw=true > "$TEMP_ENV" && chmod 600 "$TEMP_ENV"`.
+2. Edit the KEY=value lines in the temp file.
+3. Push it back as a new version: `infra/secrets/push-env.sh "$TEMP_ENV"`, then `rm -f "$TEMP_ENV"`.
+4. Apply on the VM: run `ssh castle@<SERVER_IP> /opt/castle/repo/infra/secrets/pull-env.sh` and restart the affected service, or just wait one auto-deploy cycle (it pulls the vault every run and redeploys when the env changed).
+
+Batch related edits into one version; never print the content.
+
 ## Phase 0: explain the plan
 
 Tell the user, in four lines, roughly this:
@@ -36,22 +49,26 @@ Then start phase 1 without waiting, unless they object.
 
 **Verify**: `scw account project list` shows at least one project.
 
-## Phase 3: config/castle.env
+## Phase 3: settings file + the vault
 
-**Already done?** `config/castle.env` exists with non-placeholder CASTLE_DOMAIN, CASTLE_REGION, GITHUB_REPO, and non-empty POSTGRES_PASSWORD, NEXTCLOUD_DB_PASSWORD, NEXTCLOUD_ADMIN_PASSWORD. Then skip.
+**Already done?** `config/castle.env` exists with non-placeholder CASTLE_DOMAIN, CASTLE_REGION, GITHUB_REPO, AND the vault has content: `scw secret secret list name=castle-env -o json` finds the secret and `scw secret version list <secret-id>` shows at least one enabled version. Then skip.
 
-1. Copy `config/castle.env.example` to `config/castle.env` if it does not exist.
+1. Write `config/castle.env` if it does not exist: copy ONLY the settings block from `config/castle.env.example` (CASTLE_DOMAIN, CASTLE_REGION, GITHUB_REPO, SERVER_IP, and the TEM_* lines). No secrets go into this file, ever; the loud header in the example says the same.
 2. **Question 2 of the budget**: "Do you own a domain name (a web address like example.com)?"
    - **Yes**: use it as CASTLE_DOMAIN.
    - **No**: the castle gets free names from sslip.io, derived from the server's address, like `1-2-3-4.sslip.io` with `notulen.` and `cloud.` in front. Explain: these work immediately, nothing to buy or configure; they are just less pretty. Leave CASTLE_DOMAIN for phase 4, when the server IP exists. If they want a real domain later, it is one variable, three DNS records, and one Nextcloud setting Claude updates (`occ config:system:set trusted_domains`); recommend that once they like the castle.
-3. Fill CASTLE_REGION (from phase 2), GITHUB_REPO (owner/name from `git remote get-url origin`).
-4. Generate secrets locally, one `openssl rand -hex 24` each, for POSTGRES_PASSWORD, NEXTCLOUD_DB_PASSWORD, NEXTCLOUD_ADMIN_PASSWORD, NEXTCLOUD_WEBHOOK_SECRET (the last one is the internal webhook secret for the cloud sync; the stack refuses to start without it, even if the sync stays unused). Only fill fields that are still empty; never regenerate one that already has a value. Do not print them. (Hex, not base64: these end up inside a database URL, where base64's `/` characters break parsing.) Tell the user once: "Your passwords live in config/castle.env on this laptop and in /opt/castle/castle.env on the server. Git ignores both; they are never uploaded to GitHub."
-5. Business intake, **question 7 of the budget, only if it applies**: if `business/` contains anything beyond `README.md`, ask: "I see you put files in business/. Want to organize that folder together first, or keep it as it is? Either way I fill your company profile from what I find there." If `business/` holds only the README, skip this step without saying anything.
+3. Fill CASTLE_REGION (from phase 2), GITHUB_REPO (owner/name from `git remote get-url origin`) in config/castle.env.
+4. Assemble the FULL environment in a temp file (mode 600), never in config/castle.env:
+   - Start from a copy of `config/castle.env.example` (all fields, both blocks) and fill the settings values from config/castle.env. If the vault already has a version (resuming a half-finished setup), start from that instead (fetch it, step 1 of the update pattern) and only fill fields that are still empty; never regenerate one that already has a value.
+   - Generate secrets locally, one `openssl rand -hex 24` each, for POSTGRES_PASSWORD, NEXTCLOUD_DB_PASSWORD, NEXTCLOUD_ADMIN_PASSWORD, NEXTCLOUD_WEBHOOK_SECRET (the last one is the internal webhook secret for the cloud sync; the stack refuses to start without it, even if the sync stays unused). Do not print them. (Hex, not base64: these end up inside a database URL, where base64's `/` characters break parsing.)
+   - Write the literal value `pending-phase-8` for S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY, ANTHROPIC_API_KEY (compose refuses empty values; phase 8 replaces them). Set S3_ENDPOINT and S3_REGION for the region from phase 2.
+5. Push it to the vault: `infra/secrets/push-env.sh <temp file>`, then delete the temp file. Tell the user one plain sentence: "Your passwords now live in Scaleway's secret vault, not in files; config/castle.env on this laptop keeps only harmless settings."
+6. Business intake, **question 7 of the budget, only if it applies**: if `business/` contains anything beyond `README.md`, ask: "I see you put files in business/. Want to organize that folder together first, or keep it as it is? Either way I fill your company profile from what I find there." If `business/` holds only the README, skip this step without saying anything.
    - **Organize together**: propose a simple folder layout (for example `contracts/`, `invoices/`, `brand/`, `registration/`) and move the files with them watching, one sentence per move.
    - **Either way**: extract into `design/company.yaml` only values literally present in their documents: company name, address, registration and VAT numbers, IBAN, email, phone. If a logo image is found, copy it into `design/` and set `logo:`. If brand colors are obvious (the fill of an SVG logo, a letterhead color), set the colors in `design/company.yaml` and `design/tokens.css` to match. Say one sentence per thing found. Never invent; anything not found stays empty until they provide it.
    - Close with: "your castle can now produce documents in your house style; ask me for an invoice and see."
 
-**Verify**: read the file back; every field above is filled (CASTLE_DOMAIN may still be empty only on the sslip path). If the business intake ran, `design/company.yaml` holds the extracted values and nothing invented.
+**Verify**: config/castle.env holds the settings (CASTLE_DOMAIN may still be empty only on the sslip path) and nothing secret; the vault has at least one version. If the business intake ran, `design/company.yaml` holds the extracted values and nothing invented.
 
 ## Phase 4: create the server
 
@@ -61,9 +78,9 @@ Then start phase 1 without waiting, unless they object.
 2. Check `scw instance server list name=castle`. If one exists, reuse it and say so.
 3. Otherwise tell the user in one line that the paid part starts now (10 to 15 euros per month, deletable any time), then create it: `scw instance server create type=DEV1-M zone=<zone> image=ubuntu_noble root-volume=local:40GB name=castle ip=new`. The `root-volume=local:40GB` part is not optional: without it the disk defaults to the image minimum (8 GB) and the stack does not fit; 40 GB is included in the DEV1-M price. If DEV1-M is unavailable in the zone, pick the closest current small type and say which. Use the latest Ubuntu LTS image available. After first ssh, confirm `df -h /` shows roughly 40 GB.
 4. Wait until the state is running and it has a public IP (poll `scw instance server get`). Fresh servers take a minute or two to accept ssh; retry `ssh -o StrictHostKeyChecking=accept-new root@<IP> true` for a couple of minutes.
-5. Write `SERVER_IP=<IP>` into config/castle.env. If on the sslip path, also set `CASTLE_DOMAIN=<IP with dots replaced by dashes>.sslip.io` now.
+5. Write `SERVER_IP=<IP>` into config/castle.env. If on the sslip path, also set `CASTLE_DOMAIN=<IP with dots replaced by dashes>.sslip.io` now, in config/castle.env AND in the vault (update pattern; the stack cannot start in phase 6 while the vault's CASTLE_DOMAIN is a placeholder). On the real-domain path the vault already has the right domain from phase 3.
 
-**Verify**: `ssh root@<IP> true` succeeds; SERVER_IP saved; CASTLE_DOMAIN filled.
+**Verify**: `ssh root@<IP> true` succeeds; SERVER_IP saved; CASTLE_DOMAIN filled in config/castle.env and in the vault.
 
 ## Phase 5: DNS
 
@@ -94,10 +111,15 @@ Work over ssh as root for steps 1 to 4, then switch to the `castle` user forever
 4. Add a 4 GB swap file if none exists (`swapon --show` empty): `fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`, plus a `/swapfile none swap sw 0 0` line in /etc/fstab. Explain in one sentence: transcription briefly needs more memory than the small server has, and the swap file is the cheap safety margin.
 5. Deploy key, so the server can read their private repo: as castle on the VM, `ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519 -C castle-vm-deploy` (skip if it exists), `ssh-keyscan github.com >> ~/.ssh/known_hosts`. Copy the public key back to the laptop and register it read-only: `gh repo deploy-key add <pubkey-file> --repo <owner>/<name> --title "castle vm (read-only)"`. Skip if a deploy key with that title already exists.
 6. `sudo mkdir -p /opt/castle && sudo chown castle:castle /opt/castle`, then as castle `git clone git@github.com:<owner>/<name>.git /opt/castle/repo` (or `git -C /opt/castle/repo pull --ff-only` if it exists).
-7. Write `/opt/castle/castle.env`, mode 600. **Only if the file does not exist yet.** If it already exists, never overwrite filled-in values: the only permitted change is replacing a literal `pending-phase-8` placeholder, and never regenerate the notulen password when a NOTULEN_BASIC_AUTH_HASH is already present (the user saved that password). For a fresh file, start from the laptop's config/castle.env plus:
-   - A generated notulen password. Hash it with `docker run --rm caddy:2 caddy hash-password --plaintext '<password>'` and store the hash **wrapped in single quotes** as NOTULEN_BASIC_AUTH_HASH (it contains `$` characters that must not expand). Tell the user exactly once: "Your Notulen login is user `castle` with this password: <password>. Save it in your password manager now; I will not show it again." NOTULEN_BASIC_AUTH_USER stays `castle`.
-   - S3_ENDPOINT and S3_REGION for their region. S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY, ANTHROPIC_API_KEY are not known yet; write the literal value `pending-phase-8` for each (compose refuses empty values). Be honest: Notulen will start but cannot store recordings until phase 8 replaces these.
-   - Explain mode 600 in one sentence: only the castle user can read the file.
+7. Give the VM its own scoped way into the vault, then materialize the env cache. **Skip the IAM creation if `/opt/castle/scw-secrets.env` already exists on the VM.**
+   - From the laptop, create the VM's own identity: `scw iam application create name=castle-vm -o json` (reuse it if `scw iam application list name=castle-vm -o json` finds one).
+   - One policy that lets it read secret values in this project and nothing else: `scw iam policy create name=castle-vm-secrets application-id=<app-id> rules.0.permission-set-names.0=SecretManagerReadOnly rules.0.permission-set-names.1=SecretManagerSecretAccess rules.0.project-ids.0=<project-id from phase 2>`. Both permission sets are required: ReadOnly alone can list secrets but not read their values (live-tested; the pull gets permissions_denied without SecretManagerSecretAccess).
+   - An API key for that application, with an expiry about one year out (some organizations refuse keys without one): `scw iam api-key create application-id=<app-id> expires-at=<ISO 8601 date one year from today> -o json`. Note the renewal in the phase 10 memory note; "renew the castle-vm key" is an ask-Claude job in a year.
+   - Look up the vault's secret id: `scw secret secret list name=castle-env -o json`.
+   - Write `/opt/castle/scw-secrets.env` on the VM, owned by castle, mode 600, with exactly: `SCW_ACCESS_KEY=<the new key's access key>`, `SCW_SECRET_KEY=<its secret key>`, `SCW_DEFAULT_PROJECT_ID=<project id>`, `SCW_DEFAULT_REGION=<region>`, `CASTLE_ENV_SECRET_ID=<secret id>`. The powerful laptop key never lands on the VM; this scoped key can only read this project's secrets.
+   - Notulen login, **only if the vault has no NOTULEN_BASIC_AUTH_HASH yet** (the user saved that password; never regenerate it): generate a password, hash it on the VM with `docker run --rm caddy:2 caddy hash-password --plaintext '<password>'`, and put the hash into the vault (update pattern) **wrapped in single quotes** as NOTULEN_BASIC_AUTH_HASH (it contains `$` characters that must not expand). Tell the user exactly once: "Your Notulen login is user `castle` with this password: <password>. Save it in your password manager now; I will not show it again." NOTULEN_BASIC_AUTH_USER stays `castle`.
+   - Materialize the cache: as castle on the VM, run `/opt/castle/repo/infra/secrets/pull-env.sh` (a freshly created key can take a few seconds to start working; the script retries once by itself). Check `/opt/castle/castle.env` now exists, mode 600, with the real CASTLE_DOMAIN in it. Never write that file by hand; the vault is the only source and the only permitted vault changes later are replacing literal `pending-phase-8` placeholders.
+   - Be honest: Notulen will start but cannot store recordings until phase 8 replaces the S3 placeholders. Explain the model in one sentence: "your passwords live in Scaleway's secret vault; the server keeps a private copy only the castle user can read."
 8. Start everything: in `/opt/castle/repo`, `docker compose --env-file /opt/castle/castle.env up -d --build`. Explain: each service runs in its own container, and Caddy fetches the HTTPS certificates automatically, which can take a minute or two.
 9. Install auto-deploy: `sudo /opt/castle/repo/infra/systemd/install.sh`. Explain: from now on, every push to GitHub goes live within about 2 minutes; pushing is the deploy button.
 10. Verify with retries while certificates settle (up to ~5 minutes): `curl -fsSL -o /dev/null -w '%{http_code}' https://<domain>` and the same for `notulen.` (expect 401 without login, that counts as alive) and `cloud.`. Also `docker compose --env-file /opt/castle/castle.env ps` shows everything up.
@@ -128,12 +150,12 @@ Work over ssh as root for steps 1 to 4, then switch to the `castle` user forever
 **Already done?** S3_BUCKET in /opt/castle/castle.env is a real bucket name (not `pending-phase-8`) and `https://notulen.<domain>` is healthy. Then only revisit the Anthropic key if it is still the placeholder.
 
 1. Create a private Object Storage bucket: `scw object bucket create name=castle-notulen-<something unique, e.g. the domain with dots as dashes> region=<region>`. Explain: a bucket is a private cloud folder where the audio recordings live. Reuse it if it already exists.
-2. The scw API key from phase 2 doubles as the storage credentials. On the server, replace the placeholders in /opt/castle/castle.env: S3_BUCKET, S3_ACCESS_KEY (the access key), S3_SECRET_KEY (the secret key). Keep the file at mode 600.
+2. The scw API key from phase 2 doubles as the storage credentials. Replace the placeholders in the vault (update pattern; batch step 3's key into the same version): S3_BUCKET, S3_ACCESS_KEY (the access key), S3_SECRET_KEY (the secret key). This reuses the powerful laptop key as storage credentials; a scoped storage key is a noted future hardening (`infra/secrets/README.md`), not today's problem.
 3. **Question 4 of the budget**, the Anthropic key: "Notulen uses Claude to turn the transcript into the written summary, through an API key with its own billing, separate from the Claude subscription. It costs a few cents per meeting. Get one at console.anthropic.com: Billing (add a card, set a monthly limit like 5 euros), then API keys, Create key, copy the `sk-ant-...` value. Or say skip: everything else works without it, and you can add it later by just asking me."
-   - Key given: put it in /opt/castle/castle.env as ANTHROPIC_API_KEY.
+   - Key given: put it in the vault as ANTHROPIC_API_KEY (same new version as step 2).
    - Skipped: leave the placeholder and say honestly what they will see: the recording is transcribed and saved, but the job then shows as **failed** with a missing-key error; the transcript is not lost, and adding a key later (just ask Claude) makes new recordings produce minutes.
    - **In the same optional-keys conversation** (no extra question against the budget), offer the cloud sync: "One more optional token: anything you drop in a folder called Sync in your cloud files can also land in your GitHub repo automatically, so it is versioned and backed up. That needs one GitHub token; want it, or skip?" If yes, walk them through it: go to github.com/settings/personal-access-tokens, Generate new token (fine-grained), pick your castle repo as the only repository, under Repository permissions set Contents to Read and write, create, copy the token. If skip, skip phase 8b entirely; it can be turned on later by just asking Claude.
-4. Restart the service: `docker compose --env-file /opt/castle/castle.env up -d notulen` in /opt/castle/repo.
+4. Apply: run `/opt/castle/repo/infra/secrets/pull-env.sh` on the VM, then restart the service: `docker compose --env-file /opt/castle/castle.env up -d notulen` in /opt/castle/repo.
 5. Health check: the container is healthy in `docker compose ps`, `https://notulen.<domain>` answers (with the basic auth login from phase 6), and the logs start clean.
 6. If the key was given, one live test recording: they open `https://notulen.<domain>`, log in, allow the microphone, record about a minute of talk ("we decided to test Notulen"), stop, and wait. Transcription runs on the server itself, so the summary can take a few minutes; watch the logs and narrate. If nothing arrives, investigate the logs before asking them to retry.
 
@@ -147,7 +169,7 @@ Work over ssh as root for steps 1 to 4, then switch to the `castle` user forever
 
 The PAT question already happened in phase 8; this phase asks nothing new.
 
-1. Make sure NEXTCLOUD_WEBHOOK_SECRET is set in both config/castle.env (laptop) and /opt/castle/castle.env (server); generate with `openssl rand -hex 24` if either is empty (older env files from before the sync existed). Put the PAT from phase 8 into /opt/castle/castle.env as SYNC_GITHUB_PAT, keep mode 600.
+1. Make sure NEXTCLOUD_WEBHOOK_SECRET is set in the vault (phase 3 generates it; vault content from before the sync existed may lack it, then generate with `openssl rand -hex 24` and add it). Put the PAT from phase 8 into the vault as SYNC_GITHUB_PAT (same update pattern, one new version for both), then run `/opt/castle/repo/infra/secrets/pull-env.sh` on the VM.
 2. Restart the service so it picks up the env: in /opt/castle/repo, `docker compose --env-file /opt/castle/castle.env up -d --build nextcloud-sync`; wait until `docker compose ps` shows it healthy.
 3. Register the webhook listeners: `infra/nextcloud-sync/register-webhooks.sh` (idempotent; it enables the webhook_listeners app, mints and removes a temporary admin app password, and registers the three file events via the OCS API).
 4. Have one of them create a folder named exactly `Sync` at the top of their Nextcloud files (web or mobile app). Explain in one sentence: anything in this folder also lands in your GitHub repo, so it is versioned and backed up.
@@ -177,7 +199,7 @@ This phase gives Notulen a GPU, so a one-hour meeting is transcribed in minutes 
    Node health contingency (live-tested; GPU capacity has bad nights): if a node lands as `creation_error`, goes NotReady within minutes, or `kubectl get nodes -o jsonpath='{.items[*].status.allocatable.nvidia\.com/gpu}'` stays empty ~10 minutes after the node is Ready, replace it once (`scw k8s node replace <node-id> region=<region>`). Still sick: try the other L4 size as a second pool. Still sick or out of stock: leave the cluster and image in place, stay on CPU, and tell the user in one sentence that saying "turn on fast transcription" any other day retries this phase against fresh stock. Never burn more than two node attempts in one sitting.
 3. Wait until `scw k8s cluster get <cluster-id>` shows status ready (a few minutes). Then fetch the ADMIN kubeconfig for your own kubectl use: `scw k8s kubeconfig get <cluster-id> region=<region>` (save to a temp file). Do NOT put that one in KUBECONFIG_DATA: it authenticates through the scw command, which does not exist inside the dashboard container, so the cluster would treat the dashboard as anonymous and refuse it (live-test finding). Instead, after step 5 creates the namespace, run `KUBECONFIG=<admin temp file> infra/gpu/make-dashboard-kubeconfig.sh > <temp>/dashboard-kubeconfig.yaml`; it mints a service account that can only manage transcription Jobs in the castle namespace and prints a self-contained kubeconfig with a static token. KUBECONFIG_DATA is the base64 of THAT file: `base64 -w0 <temp>/dashboard-kubeconfig.yaml` (on a Mac, plain `base64`). Keep it for step 6; never print it to the user.
 4. Install kubectl if missing (Mac: `brew install kubectl`; Ubuntu/WSL: download the release binary from `https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl`, `chmod +x`, move into `~/.local/bin`). Save the kubeconfig YAML from step 3 to a temp file and `export KUBECONFIG=<that file>` for the kubectl commands below.
-5. Prepare the namespace and its two secrets. Values come from /opt/castle/castle.env; the scw secret key is the same one from phase 2:
+5. Prepare the namespace and its two secrets. Values come from the vault (read them from /opt/castle/castle.env, the pulled cache, on the VM); the scw secret key is the same one from phase 2:
 
    ```
    kubectl create namespace castle
@@ -193,7 +215,7 @@ This phase gives Notulen a GPU, so a one-hour meeting is transcribed in minutes 
    ```
 
    DB_URL is the external form on purpose: the GPU worker connects to the postgres on the castle server over the internet, on port 5432, which the stack publishes. About locking that port down: Scaleway security-group rules only accept fixed addresses, and the GPU nodes get a fresh address every time one boots, so there is no clean single rule that scopes 5432 to the cluster. Leave 5432 open and say one honest sentence to the user: the database port is reachable from the internet, protected by the long random password that never leaves the env files; a tighter lock is possible later with a private network if they ever want it.
-6. Add the GPU settings to /opt/castle/castle.env on the server (mode 600 stays), then restart the dashboard:
+6. Add the GPU settings to the vault (update pattern, one new version), pull on the VM (`/opt/castle/repo/infra/secrets/pull-env.sh`), then restart the dashboard:
 
    ```
    KUBECONFIG_DATA=<base64 from step 3>
@@ -213,7 +235,7 @@ If any step fails twice on the same error: stop, stay on CPU transcription, tell
 
 ## Phase 10: finish
 
-1. Write a memory note in `.claude/memory/` (a short file plus one index line in MEMORY.md): domain, server IP, region, instance type, bucket name, cluster and registry if the GPU tier ran, which phases ran, what was skipped (for example the Anthropic key, or the GPU tier and why), and the date. No passwords in memory, ever.
+1. Write a memory note in `.claude/memory/` (a short file plus one index line in MEMORY.md): domain, server IP, region, instance type, bucket name, cluster and registry if the GPU tier ran, which phases ran, what was skipped (for example the Anthropic key, or the GPU tier and why), the expiry date of the castle-vm API key (renewing it is an ask-Claude job), and the date. No passwords in memory, ever.
 2. Print the three addresses on their own lines: the website, `cloud.` and `notulen.`.
 3. Explain the daily loop in four lines: open a terminal, run `claude agents --dangerously-skip-permissions` in this folder, say what you want in plain words, and after I push, the change is live in about 2 minutes.
 4. Explain how bigger work goes, in three lines: for anything beyond a tiny change I first ask questions, then write the plan down as an issue on their GitHub page where they can read it and follow progress, then build it. Show them the issues page address once (github.com/<owner>/claude-castle/issues).
