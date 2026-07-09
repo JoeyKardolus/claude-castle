@@ -51,6 +51,10 @@ Work through the phases in [phases.md](phases.md), in order. Each phase is idemp
 | 9 | Fast transcription | worker image pushed, GPU cluster live, one recording processed through a K8s Job (or CPU fallback consciously recorded) |
 | 10 | Finish | memory note written, daily loop explained |
 
+## Hands-free rule
+
+The user NEVER runs a command. Every laptop tool installs without sudo into `~/.local/bin` (the phases say how); this session has no terminal for a password prompt, so any instruction that needs sudo on the laptop is a design bug, not something to hand to the user. If you genuinely hit a wall that only the user's password can pass: stop, say in one sentence what is needed and why, give exactly ONE copy-paste line, and say "paste this in your Ubuntu window (the black one from step 1), then tell me done". Never mention the `!` prefix or any terminal mechanics beyond paste-and-Enter.
+
 ## Safety rules
 
 - Never print a generated password except the one time the user must store it (the notulen login, the Nextcloud temp passwords). Never repeat it later; point at where it lives instead.
