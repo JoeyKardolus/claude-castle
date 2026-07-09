@@ -8,6 +8,7 @@ Without this tier, Notulen transcribes recordings on the castle server's own CPU
 - **Cluster**: a Scaleway Kapsule cluster named `castle` with one GPU pool (L4 card) that scales between 0 and 1 nodes. The control plane is free. A node exists, and bills, only while a transcription job runs; the autoscaler removes it about 10 minutes after it goes idle.
 - **One Job per recording**: when you upload a recording, the dashboard creates a Kubernetes Job in the `castle` namespace that requests one GPU. The autoscaler boots a node (3 to 5 minutes the first time), the job transcribes and writes the minutes, and the node disappears again. If anything in that chain fails, the recording automatically falls back to CPU transcription; nothing is lost.
 - **Database over the published port**: the worker writes its results straight into the castle server's postgres, which the stack publishes on port 5432. That port is protected by the long random database password; it is reachable from the internet because the short-lived GPU nodes have no fixed address to allow.
+- **A key with one job**: the dashboard talks to the cluster with its own service account that may only create and list transcription Jobs in the `castle` namespace, nothing else. `make-dashboard-kubeconfig.sh` in this directory mints it. The admin kubeconfig from scw cannot be used inside the container: it authenticates through the scw command, which is not there.
 
 ## Costs
 
