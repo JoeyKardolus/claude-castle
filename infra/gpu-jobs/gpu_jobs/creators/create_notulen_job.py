@@ -36,7 +36,7 @@ def _count_recent_jobs() -> int:
     """Count K8s jobs created in the last 24h (cost-ceiling input)."""
     api = client.BatchV1Api()
     jobs = api.list_namespaced_job(
-        namespace=namespace(), label_selector="app=castle-worker",
+        namespace=namespace(), label_selector="app=notulen-worker",
     )
     cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
     return sum(
