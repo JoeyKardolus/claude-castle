@@ -1,6 +1,6 @@
 ---
 name: onboard
-description: Take a fresh laptop to a fully running castle, autonomously. Installs the remaining tools, creates the Scaleway server, deploys the stack, sets up Nextcloud with 2FA and notulen, and records the result in memory. Use when config/castle.env is missing, when the user says "set up my castle" or anything like it, or when setup looks only partly done (some castle.env fields empty, server missing, or a URL not responding). Resumes from wherever the previous run stopped.
+description: Take a fresh laptop to a fully running castle, autonomously. Installs the remaining tools, creates the Scaleway server, deploys the stack, sets up Nextcloud with 2FA, notulen, and the GPU fast-transcription tier, and records the result in memory. Use when config/castle.env is missing, when the user says "set up my castle" or anything like it, or when setup looks only partly done (some castle.env fields empty, server missing, or a URL not responding). Resumes from wherever the previous run stopped.
 ---
 
 # Onboard
@@ -26,6 +26,8 @@ The entire setup asks the user at most these six things, and nothing else:
 
 Everything else you decide and generate yourself: passwords, server type, region, bucket names, all of it. If you are tempted to ask anything outside this list, decide instead.
 
+Phase 9 (fast transcription) asks nothing new: the cluster, registry, and image are all yours to create, and the Hugging Face token for speaker labels is a later ask-Claude option mentioned in passing, never a setup question.
+
 ## How to run it
 
 Work through the phases in [phases.md](phases.md), in order. Each phase is idempotent and starts with a detection check; if the check says the phase is already done, say so in half a sentence and move on. That is also how you resume a half-finished setup: run the phases from the top and let the checks skip the finished ones. Never track progress with a step counter.
@@ -41,7 +43,8 @@ Work through the phases in [phases.md](phases.md), in order. Each phase is idemp
 | 6 | Deploy the stack | three URLs respond over HTTPS |
 | 7 | Nextcloud + 2FA | two accounts enrolled, enforcement on |
 | 8 | Notulen | bucket live, service healthy, test recording done or skipped |
-| 9 | Finish | memory note written, daily loop explained |
+| 9 | Fast transcription | worker image pushed, GPU cluster live, one recording processed through a K8s Job (or CPU fallback consciously recorded) |
+| 10 | Finish | memory note written, daily loop explained |
 
 ## Safety rules
 
@@ -49,4 +52,4 @@ Work through the phases in [phases.md](phases.md), in order. Each phase is idemp
 - Never commit `config/castle.env` or `/opt/castle/castle.env`. Git ignores the local one; keep it that way.
 - If a phase fails twice in a row on the same error, stop. Explain in plain words what failed, what you tried, and what you would try next. Do not thrash.
 - From the end of phase 6 onward, all ssh goes through the `castle` user, never root.
-- Money: the server costs roughly 10 to 15 euros per month from the moment it exists. Say this once, in phase 0, and again right before creating it.
+- Money: the server costs roughly 10 to 15 euros per month from the moment it exists. Say this once, in phase 0, and again right before creating it. The GPU tier (phase 9) bills only while it is processing a recording, roughly 80 cents per hour of work, cents per meeting; say that right before creating the cluster.

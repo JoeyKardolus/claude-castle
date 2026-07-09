@@ -6,7 +6,7 @@ Each phase: **Already done?** check first, then the work, then the **Verify** ch
 
 Tell the user, in four lines, roughly this:
 
-> I am going to set up your castle: a small server at Scaleway running your website, your private cloud storage, and Notulen (the meeting recorder). It takes about half an hour of my work and a few minutes of yours. I will need two things from you along the way: a Scaleway API key (I will tell you exactly where to click) and, optionally, an Anthropic API key for the Notulen summaries. The server costs roughly 10 to 15 euros per month; everything else is free or costs cents.
+> I am going to set up your castle: a small server at Scaleway running your website, your private cloud storage, and Notulen (the meeting recorder), plus a fast transcription engine that only runs, and only costs cents, when a recording comes in. It takes about an hour of my work and a few minutes of yours. I will need two things from you along the way: a Scaleway API key (I will tell you exactly where to click) and, optionally, an Anthropic API key for the Notulen summaries. The server costs roughly 10 to 15 euros per month; everything else is free or costs cents.
 
 Then start phase 1 without waiting, unless they object.
 
@@ -152,9 +152,62 @@ The PAT question already happened in phase 8; this phase asks nothing new.
 
 **Verify**: three listeners registered, test file visible in the repo under `cloud-sync/<username>/`, test file cleaned up.
 
-## Phase 9: finish
+## Phase 9: fast transcription
 
-1. Write a memory note in `.claude/memory/` (a short file plus one index line in MEMORY.md): domain, server IP, region, instance type, bucket name, which phases ran, what was skipped (for example the Anthropic key), and the date. No passwords in memory, ever.
+**Already done?** KUBECONFIG_DATA is non-empty in /opt/castle/castle.env on the server, `scw k8s cluster list name=castle` shows a cluster, and `bash infra/gpu/build-worker.sh` reports the image already pushed (it checks the registry first and exits without building). Then skip.
+
+This phase gives Notulen a GPU, so a one-hour meeting is transcribed in minutes instead of hours. Before creating anything, tell the user the money story in two sentences: the GPU bills only while it is actually working on a recording, roughly 80 cents per hour of processing, which comes to cents per meeting; the rest of the cluster is free.
+
+1. Start the image build first, because it is the longest step (20 to 40 minutes). From the repo root: `bash infra/gpu/build-worker.sh v1 > /tmp/castle-gpu-build.log 2>&1 &` and let it run in the background while you do steps 2 to 6. It creates the `castle` registry namespace if needed, boots a temporary build instance, builds the worker image, pushes it to `rg.<region>.scw.cloud/castle/notulen-worker:v1`, and deletes the instance (a few cents total). On success the log's last line is the pushed image reference. If you planned ahead, this build can already be started in the background at the end of phase 6; if backgrounding feels risky, just run it here in the foreground and wait. No Hugging Face token is needed; without one the image transcribes fine but does not label who said what (speaker labels are a later ask-Claude option, see `infra/gpu/README.md`, never a setup question).
+2. Create the cluster. Pick the latest stable version from `scw k8s version list`, then:
+
+   ```
+   scw k8s cluster create name=castle version=<latest stable> cni=cilium region=<region> \
+     pools.0.name=gpu pools.0.node-type=L4-1-24G pools.0.size=1 \
+     pools.0.min-size=0 pools.0.max-size=1 \
+     pools.0.autoscaling=true pools.0.autohealing=true pools.0.zone=<zone>
+   ```
+
+   If L4-1-24G is out of stock in the zone, use L4-2-24G. If no GPU type is in stock at all: stop here, stay on CPU transcription, tell the user honestly what that means (recordings still work, a one-hour meeting just takes hours to process instead of minutes), record the skip in the phase 10 memory note, and skip the rest of this phase. Explain the shape once: the control plane is free; a GPU node exists, and bills, only while a transcription job runs; the autoscaler adds one when a job appears and removes it about 10 minutes after it goes idle.
+3. Wait until `scw k8s cluster get <cluster-id>` shows status ready (a few minutes). Then fetch the kubeconfig: `scw k8s kubeconfig get <cluster-id> region=<region>` prints a YAML file. KUBECONFIG_DATA is the base64 of exactly that YAML, which is the format the dashboard code expects (it base64-decodes the variable and loads the result as a kubeconfig). Make it with `scw k8s kubeconfig get <cluster-id> region=<region> | base64 -w0` (on a Mac, plain `base64`). Keep it for step 6; never print it to the user.
+4. Install kubectl if missing (Mac: `brew install kubectl`; Ubuntu/WSL: download the release binary from `https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl`, `chmod +x`, move into `~/.local/bin`). Save the kubeconfig YAML from step 3 to a temp file and `export KUBECONFIG=<that file>` for the kubectl commands below.
+5. Prepare the namespace and its two secrets. Values come from /opt/castle/castle.env; the scw secret key is the same one from phase 2:
+
+   ```
+   kubectl create namespace castle
+   kubectl -n castle create secret docker-registry castle-registry \
+     --docker-server=rg.<region>.scw.cloud --docker-username=nologin \
+     --docker-password=<scw secret key>
+   kubectl -n castle create secret generic castle-worker-secrets \
+     --from-literal=DB_URL='postgresql://castle:<POSTGRES_PASSWORD>@<SERVER_IP>:5432/castle' \
+     --from-literal=S3_ENDPOINT=<value> --from-literal=S3_REGION=<value> \
+     --from-literal=S3_BUCKET=<value> --from-literal=S3_ACCESS_KEY=<value> \
+     --from-literal=S3_SECRET_KEY=<value> --from-literal=ANTHROPIC_API_KEY=<value> \
+     --from-literal=MINUTES_LANGUAGE=<value>
+   ```
+
+   DB_URL is the external form on purpose: the GPU worker connects to the postgres on the castle server over the internet, on port 5432, which the stack publishes. About locking that port down: Scaleway security-group rules only accept fixed addresses, and the GPU nodes get a fresh address every time one boots, so there is no clean single rule that scopes 5432 to the cluster. Leave 5432 open and say one honest sentence to the user: the database port is reachable from the internet, protected by the long random password that never leaves the env files; a tighter lock is possible later with a private network if they ever want it.
+6. Add the GPU settings to /opt/castle/castle.env on the server (mode 600 stays), then restart the dashboard:
+
+   ```
+   KUBECONFIG_DATA=<base64 from step 3>
+   CASTLE_K8S_NAMESPACE=castle
+   NOTULEN_WORKER_IMAGE=rg.<region>.scw.cloud/castle/notulen-worker:v1
+   CASTLE_IMAGE_PULL_SECRET=castle-registry
+   DB_URL_OPS=postgresql://castle:<POSTGRES_PASSWORD>@<SERVER_IP>:5432/castle
+   ```
+
+   In /opt/castle/repo: `docker compose --env-file /opt/castle/castle.env up -d notulen`.
+7. Wait for the step 1 build to finish (`tail /tmp/castle-gpu-build.log`; the last line on success is the pushed image reference). Do not start the end-to-end test before the image is in the registry.
+8. End-to-end verify with a short test recording. Tell the user plainly first: the first GPU meeting takes a few minutes extra while the machine boots; after that, recordings that arrive while the node is still warm start right away. They record about a minute of talk in the dashboard and stop. You watch `kubectl get jobs -n castle -w`: a Job named `notulen-<first 20 characters of the job id>` appears (it requests one GPU), `kubectl get nodes` shows a node booting (3 to 5 minutes the first time), the Job completes, and the recording's row in the dashboard finishes. If dispatch fails, the recording still lands through the CPU path automatically; nothing is lost, but investigate before calling this phase done.
+
+If any step fails twice on the same error: stop, stay on CPU transcription, tell the user what that means (recordings still work, a one-hour meeting just takes hours instead of minutes), and record the skip in the phase 10 memory note. The GPU tier can be added later by just asking Claude.
+
+**Verify**: image in the registry, cluster ready, KUBECONFIG_DATA set on the server, notulen restarted, one test recording processed through a K8s Job and finished in the dashboard (or the CPU fallback consciously chosen and recorded).
+
+## Phase 10: finish
+
+1. Write a memory note in `.claude/memory/` (a short file plus one index line in MEMORY.md): domain, server IP, region, instance type, bucket name, cluster and registry if the GPU tier ran, which phases ran, what was skipped (for example the Anthropic key, or the GPU tier and why), and the date. No passwords in memory, ever.
 2. Print the three addresses on their own lines: the website, `cloud.` and `notulen.`.
 3. Explain the daily loop in four lines: open a terminal, run `claude agents --dangerously-skip-permissions` in this folder, say what you want in plain words, and after I push, the change is live in about 2 minutes.
 4. Explain how bigger work goes, in three lines: for anything beyond a tiny change I first ask questions, then write the plan down as an issue on their GitHub page where they can read it and follow progress, then build it. Show them the issues page address once (github.com/<owner>/claude-castle/issues).

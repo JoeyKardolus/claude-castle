@@ -189,6 +189,13 @@ def _transcode_to_wav(src: Path, dst: Path) -> None:
 
 # ── Diarization ─────────────────────────────────────────────────────────────
 
+def _wav_duration_secs(wav_path: Path) -> float:
+    """Duration of the 16kHz mono WAV that _transcode_to_wav produced."""
+    import wave
+    with wave.open(str(wav_path), "rb") as wav_file:
+        return wav_file.getnframes() / wav_file.getframerate()
+
+
 def _diarize(wav_path: Path) -> list[tuple[float, float, str]]:
     """Run pyannote speaker diarization on GPU. Returns [(start, end, speaker), ...]."""
     from pyannote.audio import Pipeline
@@ -196,15 +203,30 @@ def _diarize(wav_path: Path) -> list[tuple[float, float, str]]:
 
     log.info("Loading pyannote pipeline on GPU...")
     hf_token = os.environ.get("HF_TOKEN") or None
-    pipeline = Pipeline.from_pretrained(
-        "pyannote/speaker-diarization-3.1",
-        use_auth_token=hf_token,
-    )
+    try:
+        pipeline = Pipeline.from_pretrained(
+            "pyannote/speaker-diarization-3.1",
+            use_auth_token=hf_token,
+        )
+    except Exception:
+        # Image built without the pyannote model bake and no runtime token
+        # to download it: expected on the tokenless image, degrade below.
+        # With a token set, a load failure is a real error: fail loud.
+        if hf_token:
+            raise
+        pipeline = None
     # Pyannote 3.x silently returns None when the HF token is invalid or the
     # gated model terms haven't been accepted, so `.to()` blows up with the
     # cryptic "'NoneType' has no attribute 'to'". Fail loud with the actual
     # cause — past us learned this the hard way on 2026-05-13.
     if pipeline is None:
+        if not hf_token:
+            log.info(
+                "pyannote model not baked into this image and HF_TOKEN not set: "
+                "speaker labels disabled, whole recording labeled 'Spreker 1' "
+                "(rebuild the worker image with --secret id=HF_TOKEN to enable)"
+            )
+            return [(0.0, _wav_duration_secs(wav_path), "Spreker 1")]
         raise RuntimeError(
             "pyannote Pipeline.from_pretrained returned None. "
             "Cause is almost always one of: (1) HF_TOKEN missing/invalid, "

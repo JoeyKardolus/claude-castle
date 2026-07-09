@@ -81,6 +81,16 @@ services:
       NOTULEN_GITHUB_PAT: ${NOTULEN_GITHUB_PAT:-}
       NOTULEN_GITHUB_BRANCH: ${NOTULEN_GITHUB_BRANCH:-main}
       NOTULEN_TARGET_DIR: ${NOTULEN_TARGET_DIR:-minutes/}
+      # Optional GPU tier (all empty = CPU transcription, the default path).
+      # Onboard's GPU phase fills these in castle.env; see config/castle.env.example.
+      KUBECONFIG_DATA: ${KUBECONFIG_DATA:-}          # base64 kubeconfig of the castle cluster
+      CASTLE_K8S_NAMESPACE: ${CASTLE_K8S_NAMESPACE:-}
+      NOTULEN_WORKER_IMAGE: ${NOTULEN_WORKER_IMAGE:-}
+      CASTLE_IMAGE_PULL_SECRET: ${CASTLE_IMAGE_PULL_SECRET:-}
+      MAX_DAILY_JOBS: ${MAX_DAILY_JOBS:-50}          # GPU-job cost ceiling per 24h
+      # The database address GPU workers use to reach this stack from OUTSIDE
+      # the docker network (host IP, not "postgres"); set by onboard's GPU phase.
+      DB_URL_OPS: ${DB_URL_OPS:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -101,6 +111,13 @@ services:
     image: postgres:16
     container_name: castle-postgres
     restart: unless-stopped
+    ports:
+      # Published so GPU workers on the (optional) Kubernetes cluster can
+      # reach the database from outside the docker network; they write
+      # transcripts back over DB_URL_OPS. Acceptable to expose because the
+      # password is a 48-character random hex and onboard's GPU phase
+      # restricts the server firewall to the cluster's addresses.
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
