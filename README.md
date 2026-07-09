@@ -10,7 +10,9 @@ Five things, all yours, all managed by Claude:
 
 Why a server? These things need a computer that is always on. You rent a small one, about the price of two coffees a month, and Claude sets it up and looks after it. You never touch it.
 
-**You need**: your Claude subscription, a bank card, and a free GitHub account (Claude helps you make one along the way; GitHub is where your castle's blueprints and plans are kept).
+**You need**: a Claude subscription, a bank card, and a free GitHub account (Claude helps you make one along the way; GitHub is where your castle's blueprints and plans are kept).
+
+**No subscription yet? Do not search the web for one.** There are lookalike websites that sell you the wrong thing. Step 3 below has a `/login` step that takes you to the one right place, claude.ai, where you log in or subscribe. In this whole setup only three websites ever ask for money: **claude.ai**, **scaleway.com**, and (optional) **console.anthropic.com**. Anything else asking for payment is wrong; close it.
 
 Doing the list below once takes about an hour, most of it waiting.
 
@@ -58,7 +60,7 @@ The first time, type this inside Claude and press Enter:
 /login
 ```
 
-Your browser opens: log in with your Claude account. The scary-looking words in the start command mean Claude may work without asking permission for every small step; that is what makes this hands-free. Only start Claude this way inside this folder. Read the safety section below before your first run; it is short and it matters.
+Your browser opens on claude.ai, the one right place: log in there, or subscribe there if you have not yet (check the address bar says claude.ai before paying anything). The scary-looking words in the start command mean Claude may work without asking permission for every small step; that is what makes this hands-free. Only start Claude this way inside this folder. Read the safety section below before your first run; it is short and it matters.
 
 ## Powerful, so handle with care
 
@@ -82,9 +84,10 @@ Claude does the rest: connects you to GitHub, walks you through Scaleway (the co
 
 Scaleway is the European company renting you the server. When Claude reaches that step it guides you through exactly this:
 
-1. Create an account at scaleway.com and verify your email.
-2. Add your bank card under Billing. The server costs 10 to 15 euro per month; you can delete it any time.
-3. Claude then asks for an API key: a long code that lets Claude manage the server for you. In the Scaleway website menu: IAM, then API keys, then Generate API key. Copy the two codes it shows and paste them to Claude.
+1. Create an account at https://www.scaleway.com (that exact address) and verify your email.
+2. Add your bank card in the console at https://console.scaleway.com under Billing. The server costs 10 to 15 euro per month; you can delete it any time.
+3. Claude then asks for an API key: a long code that lets Claude manage the server for you. In the console menu: IAM, then API keys, then Generate API key. Copy the two codes it shows and paste them to Claude.
+4. Claude will also point you at Billing, Budget alerts, to set a monthly spending alert (30 euro is a good number). Then a surprise bill is impossible: you get a warning email long before anything unusual.
 
 ## Living in the castle
 

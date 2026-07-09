@@ -41,8 +41,9 @@ Then start phase 1 without waiting, unless they object.
 **Already done?** `scw account project list` returns a project table. Then skip.
 
 1. Install scw if missing: `curl -sL https://raw.githubusercontent.com/scaleway/scaleway-cli/master/scripts/get.sh | sh`
-2. **Question 3 of the budget**, ask for the API key with this exact path: "Go to console.scaleway.com, log in, click IAM in the left menu (or your name, then API keys), then API keys, then Generate API key. It shows an Access key and a Secret key. Copy both and paste them here. The secret is shown only once, so copy it before closing." If they have no Scaleway account yet, send them to scaleway.com to sign up and add a payment card first (Billing section), then come back for the key.
-3. Configure non-interactively, never through `scw init`:
+2. **Question 3 of the budget**, ask for the API key with this exact path: "Go to https://console.scaleway.com, log in, click IAM in the left menu (or your name, then API keys), then API keys, then Generate API key. It shows an Access key and a Secret key. Copy both and paste them here. The secret is shown only once, so copy it before closing." If they have no Scaleway account yet, send them to https://www.scaleway.com (say: check the address bar, that exact address) to sign up and add a payment card first (Billing section), then come back for the key.
+3. Spending alert, part of the same conversation, not a new question: send them to https://console.scaleway.com/billing/alerts and have them set a monthly budget alert of 30 euro (any number they like; 30 covers the whole castle with room). One sentence why: a warning email arrives long before any surprise. If the page looks different, it lives under Billing, then Budget alerts. Do not proceed to phase 3 until they say it is set or they explicitly skip.
+4. Configure non-interactively, never through `scw init`:
    - `scw config set access-key=<ACCESS> secret-key=<SECRET>`
    - `scw account project list` to find the project and organization IDs, then `scw config set default-project-id=<id> default-organization-id=<id> default-region=fr-par default-zone=fr-par-1`
    - Region is your decision, not a question: `fr-par` unless the user already said where they live and another Scaleway region is clearly closer.
