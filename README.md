@@ -52,7 +52,13 @@ Paste:
 claude agents --dangerously-skip-permissions
 ```
 
-The first time, your browser opens: log in with your Claude account. The scary-looking words in the command mean Claude may work without asking permission for every small step; that is what makes this hands-free. Only start Claude this way inside this folder. Read the safety section below before your first run; it is short and it matters.
+The first time, type this inside Claude and press Enter:
+
+```
+/login
+```
+
+Your browser opens: log in with your Claude account. The scary-looking words in the start command mean Claude may work without asking permission for every small step; that is what makes this hands-free. Only start Claude this way inside this folder. Read the safety section below before your first run; it is short and it matters.
 
 ## Powerful, so handle with care
 
