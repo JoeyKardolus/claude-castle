@@ -5,8 +5,9 @@
 # authenticates through the scw command itself (an "exec plugin"). Inside
 # the notulen container there is no scw, so every request would arrive
 # anonymous and be refused. This script creates a service account that can
-# do exactly one thing, manage transcription Jobs in the castle namespace,
-# and prints a self-contained kubeconfig with a static token for it.
+# manage transcription Jobs in the castle namespace and read cluster nodes
+# (the VM watchdog checks node age through the same token), and prints a
+# self-contained kubeconfig with a static token for it.
 #
 # Usage (admin kubeconfig from scw must be active):
 #   KUBECONFIG=<admin-kubeconfig> infra/gpu/make-dashboard-kubeconfig.sh > dashboard-kubeconfig.yaml
