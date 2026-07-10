@@ -87,7 +87,7 @@ Claude does the rest: connects you to GitHub, walks you through Scaleway (the co
 Scaleway is the European company renting you the server. When Claude reaches that step it guides you through exactly this:
 
 1. Create an account at https://www.scaleway.com (that exact address). Pick **Continue with GitHub** and use the GitHub account from earlier: no new password, one account fewer to manage.
-2. Add your bank card in the console at https://console.scaleway.com under Billing. One honest warning: Scaleway refuses prepaid-style cards, which includes Revolut and most virtual cards; use a normal bank card (a Visa or Mastercard from your regular bank). The server costs 10 to 15 euro per month; you can delete it any time.
+2. Add your bank card in the console at https://console.scaleway.com under Billing. One honest warning: Scaleway refuses prepaid-style cards, which includes Revolut and most virtual cards. A normal bank card works, debit or credit (their own instructions say "credit or debit card"), so the Mastercard or Visa from your regular bank is fine. No usable card at all? Scaleway also takes payment straight from a bank account (a SEPA mandate, on the same Billing page); Claude helps you set that up. The server costs 10 to 15 euro per month; you can delete it any time.
 3. Claude then asks for an API key: a long code that lets Claude manage the server for you. In the console menu: IAM, then API keys, then Generate API key. Copy the two codes it shows and paste them to Claude.
 4. Spending protection is automatic: your castle checks its own bill every hour and warns you past 30 euro a month. Scaleway also offers its own alert email under Billing, Budget alerts, if you ever want a second net.
 
