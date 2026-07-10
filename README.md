@@ -110,7 +110,7 @@ Ask for two things early on: "set up backups", and once a month, "update": your 
 ## Costs
 
 - Server: 10 to 15 euro per month.
-- Web address (optional): about 10 euro per year.
+- Web address (optional): about 10 euro per year; Claude can register one for you on the same Scaleway bill and manage it entirely, you never touch DNS settings.
 - Notulen summaries: cents per meeting, through an API key.
 - Emailing documents: free tier at first, then cents per email.
 

@@ -55,9 +55,10 @@ Then start phase 1 without waiting, unless they object.
 **Already done?** `config/castle.env` exists with non-placeholder CASTLE_DOMAIN, CASTLE_REGION, GITHUB_REPO, AND the vault has content: `scw secret secret list name=castle-env -o json` finds the secret and `scw secret version list <secret-id>` shows at least one enabled version. Then skip.
 
 1. Write `config/castle.env` if it does not exist: copy ONLY the settings block from `config/castle.env.example` (CASTLE_DOMAIN, CASTLE_REGION, GITHUB_REPO, SERVER_IP, and the TEM_* lines). No secrets go into this file, ever; the loud header in the example says the same.
-2. **Question 2 of the budget**: "Do you own a domain name (a web address like example.com)?"
-   - **Yes**: use it as CASTLE_DOMAIN.
-   - **No**: the castle gets free names from sslip.io, derived from the server's address, like `1-2-3-4.sslip.io` with `notulen.` and `cloud.` in front. Explain: these work immediately, nothing to buy or configure; they are just less pretty. Leave CASTLE_DOMAIN for phase 4, when the server IP exists. If they want a real domain later, it is one variable, three DNS records, and one Nextcloud setting Claude updates (`occ config:system:set trusted_domains`); recommend that once they like the castle.
+2. **Question 2 of the budget**: "Do you own a web address (a domain like example.com)? If not, want one? About 10 euro a year, on the same Scaleway bill, and I handle everything; or start with free temporary addresses and decide later."
+   - **Owns one elsewhere**: use it as CASTLE_DOMAIN; DNS happens in phase 5 at their registrar.
+   - **Wants one**: ask what name they would like, check it with `scw domain domain search domains.0=<name>` (offer close alternatives if taken), say the real yearly price, and on their yes register it with `scw domain order buy` (it needs a registrant contact: their name, address, and email, one short ask; that is the legal owner-on-record every registrar requires). Registration takes minutes; the domain then lives at Scaleway and its DNS is fully yours to manage by command, the user never touches records. Use it as CASTLE_DOMAIN.
+   - **Neither, for now**: the castle gets free names from sslip.io, derived from the server's address, like `1-2-3-4.sslip.io` with `notulen.` and `cloud.` in front. They work immediately and are just less pretty. Leave CASTLE_DOMAIN for phase 4, when the server IP exists. Swapping in a real domain later is one ask.
 3. Fill CASTLE_REGION (from phase 2), GITHUB_REPO (owner/name from `git remote get-url origin`) in config/castle.env.
 4. Assemble the FULL environment in a temp file (mode 600), never in config/castle.env:
    - Start from a copy of `config/castle.env.example` (all fields, both blocks) and fill the settings values from config/castle.env. If the vault already has a version (resuming a half-finished setup), start from that instead (fetch it, step 1 of the update pattern) and only fill fields that are still empty; never regenerate one that already has a value.
@@ -87,7 +88,8 @@ Then start phase 1 without waiting, unless they object.
 
 **Already done?** All three names resolve to SERVER_IP. Check without installing anything: `python3 -c "import socket; print(socket.gethostbyname('<name>'))"` for `<domain>`, `notulen.<domain>` and `cloud.<domain>` (python3 is always present; no dig, no sudo).
 
-- **Real domain**: print exactly this table with their real domain and IP, and explain in one sentence that an A record points a name at a server address, added at the website where they bought the domain (look for "DNS", "DNS records", or "Zone"):
+- **Scaleway-registered domain** (phase 3 bought it): create the three records yourself, no user action: `scw dns record` bulk update on the zone, A records for the root, `notulen` and `cloud`, all pointing at SERVER_IP, TTL default. Verify with the resolution checks and move on.
+- **Real domain owned elsewhere**: print exactly this table with their real domain and IP, and explain in one sentence that an A record points a name at a server address, added at the website where they bought the domain (look for "DNS", "DNS records", or "Zone"):
 
   | Type | Name | Value |
   |---|---|---|
