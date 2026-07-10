@@ -35,7 +35,21 @@ Phase 9 (fast transcription) asks nothing new: the cluster, registry, and image 
 
 ## How to run it
 
-Work through the phases in [phases.md](phases.md), in order. Each phase is idempotent and starts with a detection check; if the check says the phase is already done, say so in half a sentence and move on. That is also how you resume a half-finished setup: run the phases from the top and let the checks skip the finished ones. Never track progress with a step counter.
+Work through the phases in [phases.md](phases.md). Each phase is idempotent and starts with a detection check; if the check says the phase is already done, say so in half a sentence and move on. That is also how you resume a half-finished setup: run the phases from the top and let the checks skip the finished ones. Never track progress with a step counter.
+
+## Orchestration: front-load the human, then build in parallel
+
+The user's part ends early; the build is yours alone. Run it in three blocks:
+
+1. **The human block, phases 0 to 4 in order.** This holds every question except the phone QR codes: GitHub login, the domain question, the Scaleway key and card. While asking for the Scaleway key, also mention the one optional errand they can run in the meantime: getting the Anthropic key for meeting summaries (console.anthropic.com, skippable as always). After phase 4 the vault is filled and the server exists; tell them in one sentence: "I have everything I need; the next twenty minutes or so are all mine, I will call you when your cloud login is ready."
+2. **The parallel block, zero user input.** Spread the independent work over subagents (the Agent tool, general-purpose) and run them CONCURRENTLY:
+   - worker A: the fast-transcription engine's long pole, phase 9 steps: registry, worker image build on the temp instance, cluster creation;
+   - worker B: the server stack, phases 5 and 6 end to end (DNS or sslip, provisioning, scoped key, deploy, watchdog, kubectl);
+   - worker C: the recording storage, phase 8 storage steps (bucket, vault update for S3 values).
+   Each worker gets the exact phase section as its instructions plus the shared facts (server IP, domain, region, vault pattern). You collect their results, then finish the GPU wiring (phase 9 remaining steps) yourself. If a worker fails twice, apply that phase's own fallback (CPU fallback for GPU, and so on) and keep the rest moving; one broken module never stalls the others.
+3. **The closing human block.** Only now interrupt them again, once, with everything that needs their hands in one sitting: Nextcloud accounts and the QR codes (phase 7), the Anthropic key if they fetched it (phase 8 rest, with the live test recording), then finish (phase 10).
+
+Between blocks, one sentence of progress. During the parallel block, at most one short update if something takes unusually long.
 
 | Phase | Does | Done when |
 |---|---|---|
