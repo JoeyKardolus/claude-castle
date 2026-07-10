@@ -45,6 +45,7 @@ The VM and everything that keeps it serving, in `infra/`:
 - **`infra/auto-deploy/`**: the pull loop. A systemd timer runs a script that fetches `origin/main`, and if there are new commits or a new vault version, pulls and restarts the compose stack. Pushing to `main` IS the deploy; there is no separate release step.
 - **`infra/systemd/`**: unit files for the timer and anything else that must survive a reboot.
 - **`infra/docker/`**: shared container build bits.
+- **`infra/watchdog/`**: hourly burn-and-health check on the VM (wedged GPU machines, stuck recordings, full disk, monthly spend past `CASTLE_BUDGET_EUR`). Alert-first: the server may read the bill, never change the account. Warnings: `journalctl -t castle-watchdog`, plus email when configured.
 - The `onboard` skill (`.claude/skills/onboard/`) prepares a fresh VM once, driven by Claude: server creation, Docker, the env file, first start of the stack, the timer.
 
 ## infra/nextcloud

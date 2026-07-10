@@ -29,6 +29,16 @@ kubectl -n "$NS" get role "$SA" >/dev/null 2>&1 \
 kubectl -n "$NS" get rolebinding "$SA" >/dev/null 2>&1 \
     || kubectl -n "$NS" create rolebinding "$SA" --role="$SA" --serviceaccount="$NS:$SA" >/dev/null
 
+# The watchdog on the VM (infra/watchdog/watchdog.sh) reuses this account to
+# spot a GPU node that outlived the autoscaler's scale-down (money burning).
+# Nodes are cluster-scoped, so the namespaced Role above cannot cover them;
+# this read-only ClusterRole is the smallest grant that can.
+kubectl get clusterrole castle-nodes-read >/dev/null 2>&1 \
+    || kubectl create clusterrole castle-nodes-read --verb=get,list --resource=nodes >/dev/null
+kubectl get clusterrolebinding castle-nodes-read >/dev/null 2>&1 \
+    || kubectl create clusterrolebinding castle-nodes-read \
+        --clusterrole=castle-nodes-read --serviceaccount="$NS:$SA" >/dev/null
+
 # Long-lived token bound to the service account (a Secret of this type is
 # auto-filled by Kubernetes with a token that survives restarts).
 kubectl -n "$NS" get secret "$SA-token" >/dev/null 2>&1 || kubectl -n "$NS" apply -f - >/dev/null <<EOF
